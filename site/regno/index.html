@@ -199,7 +199,7 @@ const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(34,1,1,1400);
 const controls=new THREE.OrbitControls(camera,renderer.domElement);
 controls.enableDamping=true;controls.dampingFactor=.08;controls.screenSpacePanning=false;
-controls.minDistance=12;controls.maxDistance=540;controls.maxPolarAngle=1.62;controls.minPolarAngle=.2;
+controls.minDistance=12;controls.maxDistance=640;controls.maxPolarAngle=1.62;controls.minPolarAngle=.2;
 controls.mouseButtons={LEFT:THREE.MOUSE.PAN,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.ROTATE};
 controls.touches={ONE:THREE.TOUCH.PAN,TWO:THREE.TOUCH.DOLLY_ROTATE};
 
@@ -212,7 +212,7 @@ const pmrem=new THREE.PMREMGenerator(renderer);let ENV=null;
 const hemi=new THREE.HemisphereLight(0xdfefff,0x6b5a45,.8);scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xfff0d8,2.1);sun.position.set(-52,90,40);sun.castShadow=true;
 const sm=isMobile()?2048:4096;sun.shadow.mapSize.set(sm,sm);
-Object.assign(sun.shadow.camera,{left:-56,right:56,top:56,bottom:-56,near:5,far:240});sun.shadow.bias=-.0005;sun.shadow.normalBias=.04;
+Object.assign(sun.shadow.camera,{left:-74,right:74,top:74,bottom:-74,near:5,far:260});sun.shadow.bias=-.0005;sun.shadow.normalBias=.04;
 scene.add(sun,sun.target);
 const rim=new THREE.DirectionalLight(0x9fc4ff,.45);rim.position.set(40,-10,-30);scene.add(rim);
 
@@ -549,7 +549,7 @@ function people(){
   {const[x,z]=tw(F.gx,F.gy);citizen('Barbarian',V(x+1.4,z+1.6),{ry:-2.4,anim:'Use_Item',ts:1.6});citizen('Knight',V(x-1.6,z+1.8),{ry:2.6,anim:'Interact',ts:1.6})}
   {const[x,z]=tw(K.gx,K.gy);citizen('Mage',V(x+2.2,z+2.2),{ry:-2.2,anim:'Sit_Floor_Idle'});citizen('Barbarian',V(x-1.4,z+4.2),{ry:1.2,anim:'Lie_Idle'})}
   {const[x,z]=tw(C.gx,C.gy);citizen('Knight',V(x-1.8,z+CR+.4),{anim:'Idle',armed:true});citizen('Knight',V(x+1.8,z+CR+.4),{anim:'Idle',armed:true})}
-  {const[x,z]=tw(C.gx,C.gy);wavers(x,z);parade()}
+  {const[x,z]=tw(C.gx,C.gy);wavers(x,z);vassalIslands();VASSALS.forEach((v,i)=>v.slot=WAVERS.length+i);parade()}
   ANTS=crowd(isMobile()?50:90);riders(isMobile()?8:16);
 }
 let ANTS=[];
@@ -603,6 +603,7 @@ function shoutSynth(){
 function cheer(){
   if(!WAVERS.length)return;const t=performance.now()/1000;cheerUntil=t+3.2;
   WAVERS.forEach(c=>{if(!c.marching){c.cheering=true;c.play('Cheer',1.1)}});shout();burst();
+  if(PARADE){PARADE.start()}callVassals();
   if(!sel){const[cx,cz]=tw(C.gx,C.gy);flyTo(new THREE.Vector3(cx,2,cz+CR+1),isMobile()?26:18)}
 }
 let burst=()=>{};
@@ -627,11 +628,11 @@ function parade(){
   crown.position.set(0,1.26,-.02);h.body.add(crown);
   const aura=glow(0,0,0,4,0xffd36b);aura.material.opacity=.35;glows.splice(glows.indexOf(aura),1);
   const SPEED=1.1,GAP=1.5,PAUSE=40;let s=-1,t0=null;
-  PARADE={start:()=>{if(s<0){s=0}}};
+  PARADE={start:()=>{if(s<0){s=0}},active:()=>s>=0,s:()=>s,at,GAP,Rp};
   const home=at(0);h.g.position.copy(home.p);h.g.rotation.y=0;
   anim.push((t,dt)=>{
     if(t0===null)t0=t+6;if(s<0&&t>t0){s=0}
-    const marching=s>=0,last=L+WAVERS.length*GAP+2;
+    const busy=VASSALS.filter(v=>v.state==='follow'||v.state==='chase').length,marching=s>=0,last=L+(WAVERS.length+(busy?VASSALS.length:0))*GAP+2;
     if(marching){s+=SPEED*dt;
       const k=at(s);h.g.position.copy(k.p);if(k.dir.lengthSq()>1e-4)h.g.rotation.y=Math.atan2(k.dir.x,k.dir.z);
       const w=t*4.2;h.legs.forEach((l,i)=>l.rotation.x=Math.sin(w+[0,Math.PI,Math.PI*.5,Math.PI*1.5][i])*.45);h.body.position.y=Math.abs(Math.sin(w))*.03;h.neck.rotation.x=-.75+Math.sin(w*2)*.06;h.tail.rotation.x=.8+Math.sin(w*.7)*.15;
@@ -642,8 +643,77 @@ function parade(){
       aura.position.set(h.g.position.x,h.g.position.y+2.4,h.g.position.z);aura.material.opacity=.25+.1*Math.sin(t*3);
       if(s>last){s=-1;t0=t+PAUSE;WAVERS.forEach(c=>{c.marching=false;c.returning=true;c.play('Walking_A',.95)})}
     }else{aura.material.opacity=0}
+    vassalsTick(dt,PARADE);
     WAVERS.forEach(c=>{if(!c.returning)return;const d=c.home.clone().sub(c.m.position);d.y=0;if(d.length()<.08){c.returning=false;c.m.position.copy(c.home);c.m.rotation.y=c.homeRy;c.play('Idle');return}
       c.m.position.addScaledVector(d.normalize(),Math.min(d.length(),1.3*dt));c.m.position.y=groundY(c.m.position.x,c.m.position.z);c.m.rotation.y=Math.atan2(d.x,d.z)});
+  });
+}
+
+/* ---------- isole dei vassalli con ponti levatoi ---------- */
+let VASSALS=[];
+const VCOL=[['#8a1c1c','#f2c14e'],['#1f3f8a','#f3ecdc'],['#2d6a3e','#e9c46a'],['#5b2a86','#f2c14e']];
+function vassalIslands(){
+  VASSALS=[];const se=SEASONS[season];
+  [0.15,1.55,3.95,5.0].forEach((th,k)=>{
+    const edge=Rf(th),D=edge+17,cx=Math.cos(th)*D,cz=Math.sin(th)*D,R=7.5,dir=new THREE.Vector3(Math.cos(th),0,Math.sin(th));
+    // isola: piano d'erba + roccia a cono
+    const top=new THREE.Mesh(new THREE.CylinderGeometry(R,R*.96,.6,24),M(se.ground[k%4],{roughness:1}));top.position.set(cx,0,cz);top.receiveShadow=true;world.add(top);
+    const g=new THREE.ConeGeometry(R*.96,22,12,4);g.rotateX(Math.PI);const p=g.attributes.position,r=rng(40+k);for(let i=0;i<p.count;i++){if(p.getY(i)<10.9){p.setX(i,p.getX(i)*(.85+r()*.3));p.setZ(i,p.getZ(i)*(.85+r()*.3))}}g.computeVertexNormals();
+    const rock=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:lin(0x7d6550),flatShading:true,roughness:1}));rock.position.set(cx,-11.3,cz);world.add(rock);
+    const bob=t=>Math.sin(t*.4+k)*.0;
+    // edifici e alberi del vassallo
+    const ang=-th+Math.PI/2;
+    place('tower_A',cx-dir.x*1.5+dir.z*2.6,cz-dir.z*1.5-dir.x*2.6,{y:.3,s:2.4,ry:ang});
+    place(k%2?'home_B':'barracks',cx+dir.x*2.2-dir.z*2.4,cz+dir.z*2.2+dir.x*2.4,{y:.3,s:2.2,ry:ang+Math.PI});
+    for(let i=0;i<5;i++){const a=r()*Math.PI*2,rr=4+r()*2.6;place(i%2?'tree_single_A':'tree_single_B',cx+Math.cos(a)*rr,cz+Math.sin(a)*rr,{y:.3,s:2+r(),mat:foliageMat})}
+    // stendardo del vassallo
+    const f=flagFor(...VCOL[k]);f.g.scale.setScalar(2.2);f.g.position.set(cx+dir.x*3.4,.3,cz+dir.z*3.4);world.add(f.g);anim.push(t=>f.wave(t+k,1));
+    // ponte levatoio: cerniera sul bordo dell'isola del vassallo, punta verso l'isola principale
+    const A=new THREE.Vector3(cx-dir.x*(R-.4),.32,cz-dir.z*(R-.4)),B=new THREE.Vector3(Math.cos(th)*(edge-1.2),0,Math.sin(th)*(edge-1.2));
+    const len=A.distanceTo(B)+.4,hinge=new THREE.Group();hinge.position.copy(A);hinge.rotation.y=Math.atan2(-dir.x,-dir.z);world.add(hinge);
+    const deck=new THREE.Group();hinge.add(deck);
+    const plank=new THREE.Mesh(new THREE.BoxGeometry(2.6,.22,len),M(0x7a5232));plank.position.set(0,0,len/2);plank.castShadow=true;plank.receiveShadow=true;deck.add(plank);
+    for(let i=0;i<Math.floor(len/1.1);i++){const s=new THREE.Mesh(new THREE.BoxGeometry(2.7,.06,.12),M(0x4a2f1a));s.position.set(0,.13,.55+i*1.1);deck.add(s)}
+    for(const sx of[-1,1]){const rail=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,len),M(0x3a2414));rail.position.set(sx*1.3,.2,len/2);deck.add(rail)}
+    // portale e catene
+    const gate=new THREE.Group();gate.position.copy(A);gate.rotation.y=hinge.rotation.y;world.add(gate);
+    for(const sx of[-1,1]){const post=new THREE.Mesh(new THREE.BoxGeometry(.5,4.4,.5),M(0x8f877a));post.position.set(sx*1.7,2.2,-.3);post.castShadow=true;gate.add(post)}
+    const beam=new THREE.Mesh(new THREE.BoxGeometry(4,.5,.6),M(0x8f877a));beam.position.set(0,4.4,-.3);gate.add(beam);
+    const chainMat=new THREE.LineBasicMaterial({color:0x2a2a2a}),chains=[-1,1].map(sx=>{const gg=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]);const l=new THREE.Line(gg,chainMat);world.add(l);return{l,sx}});
+    const tip=new THREE.Vector3();
+    const br={angle:1.25,target:1.25};
+    anim.push((t,dt)=>{br.angle+=(br.target-br.angle)*Math.min(1,dt*1.4);deck.rotation.x=-br.angle;
+      deck.updateMatrixWorld(true);chains.forEach(({l,sx})=>{tip.set(sx*1.25,.2,len-.3);deck.localToWorld(tip);const top=new THREE.Vector3(sx*1.5,4.2,-.3);gate.localToWorld(top);l.geometry.setFromPoints([top,tip.clone()])})});
+    // il vassallo
+    const home=new THREE.Vector3(cx-dir.x*2.6,.3,cz-dir.z*2.6);
+    const v=citizen(['Knight','Barbarian','Rogue_Hooded','Mage'][k],home.clone(),{ry:Math.atan2(-dir.x,-dir.z),anim:'Idle',armed:true,s:.5,hue:[.0,.6,.33,.78][k]});
+    if(!v)return;
+    let hand=null;v.m.traverse(o=>{if(o.name==='handslot.r')hand=o});const vf=flagFor(...VCOL[k]);vf.g.scale.setScalar(1/.5);(hand||v.m).add(vf.g);
+    anim.push(t=>{vf.wave(t+k*2,v.state==='home'?1:2);vf.g.rotation.z=v.state==='home'?Math.sin(t*2+k)*.3:Math.sin(t*6+k)*.8});
+    Object.assign(v,{state:'home',home,homeRy:v.m.rotation.y,br,A,B,dir,th,k,wait:0,q:[]});VASSALS.push(v);
+  });
+}
+const VRUN=6.5; // velocità di corsa dei vassalli
+function callVassals(){VASSALS.forEach(v=>{if(v.state==='home'){v.state='lowering';v.br.target=0;v.wait=2.6;v.play('Cheer',1.2)}})}
+function vassalY(p){const r=Math.hypot(p.x,p.z);return r<Rf(Math.atan2(p.z,p.x))-.6?groundY(p.x,p.z):.42}
+function stepTo(v,tgt,speed,dt){const p=v.m.position,dx=tgt.x-p.x,dz=tgt.z-p.z,d=Math.hypot(dx,dz),st=speed*dt;
+  if(d<=st){p.x=tgt.x;p.z=tgt.z}else{p.x+=dx/d*st;p.z+=dz/d*st;v.m.rotation.y=Math.atan2(dx,dz)}p.y=vassalY(p);return d<=st}
+function vassalsTick(dt,P){
+  VASSALS.forEach(v=>{
+    if(v.state==='lowering'){v.wait-=dt;if(v.wait<=0){v.state='out';v.q=[v.A.clone(),v.B.clone()];v.play('Running_A',1.6)}}
+    else if(v.state==='out'){if(stepTo(v,v.q[0],VRUN,dt))v.q.shift();if(!v.q.length){v.state='chase'}}
+    else if(v.state==='chase'){
+      if(!P.active()){v.state='back';v.q=[v.B.clone(),v.A.clone(),v.home.clone()];return}
+      const si=P.s()-(v.slot+1)*P.GAP;const goal=si<0?P.at(0).p:P.at(si).p;const[cx,cz]=tw(C.gx,C.gy);const p=v.m.position;
+      const rv=Math.hypot(p.x-cx,p.z-cz),av=Math.atan2(p.z-cz,p.x-cx),ag=Math.atan2(goal.z-cz,goal.x-cx);let tgt;
+      if(rv>P.Rp+1.5)tgt=new THREE.Vector3(cx+Math.cos(av)*P.Rp,0,cz+Math.sin(av)*P.Rp);
+      else{const da=Math.atan2(Math.sin(ag-av),Math.cos(ag-av));tgt=Math.abs(da)<.35?goal:new THREE.Vector3(cx+Math.cos(av+clamp(da,-.5,.5))*P.Rp,0,cz+Math.sin(av+clamp(da,-.5,.5))*P.Rp)}
+      stepTo(v,tgt,VRUN,dt);if(p.distanceTo(goal)<.7&&si>=0){v.state='follow';v.play('Walking_A',.95)}}
+    else if(v.state==='follow'){if(!P.active()){v.state='rejoin';v.play('Running_A',1.6);return}
+      const kk=P.at(P.s()-(v.slot+1)*P.GAP),n=new THREE.Vector3(kk.dir.z,0,-kk.dir.x).normalize();v.m.position.copy(kk.p).addScaledVector(n,(v.k%2?1:-1)*.6);v.m.position.y=groundY(v.m.position.x,v.m.position.z);if(kk.dir.lengthSq()>1e-4)v.m.rotation.y=Math.atan2(kk.dir.x,kk.dir.z)}
+    else if(v.state==='rejoin'){const[cx,cz]=tw(C.gx,C.gy),p=v.m.position,av=Math.atan2(p.z-cz,p.x-cx),bt=v.th;const da=Math.atan2(Math.sin(bt-av),Math.cos(bt-av));
+      if(Math.abs(da)<.3){v.state='back';v.q=[v.B.clone(),v.A.clone(),v.home.clone()]}else stepTo(v,new THREE.Vector3(cx+Math.cos(av+clamp(da,-.5,.5))*P.Rp,0,cz+Math.sin(av+clamp(da,-.5,.5))*P.Rp),VRUN,dt)}
+    else if(v.state==='back'){if(stepTo(v,v.q[0],VRUN,dt))v.q.shift();if(!v.q.length){v.state='home';v.br.target=1.25;v.m.rotation.y=v.homeRy;v.play('Idle')}}
   });
 }
 
@@ -777,7 +847,7 @@ controls.addEventListener('start',()=>{focus.active=false});
 
 /* ---------- camera ---------- */
 const focus={active:false,target:new THREE.Vector3(),pos:new THREE.Vector3()};
-function fitDist(){const W=stage.clientWidth,H=stage.clientHeight,asp=W/Math.max(1,H),hf=2*Math.atan(Math.tan(THREE.MathUtils.degToRad(17))*asp);return clamp(56/Math.tan(hf/2),160,500)}
+function fitDist(){const W=stage.clientWidth,H=stage.clientHeight,asp=W/Math.max(1,H),hf=2*Math.atan(Math.tan(THREE.MathUtils.degToRad(17))*asp);return clamp(74/Math.tan(hf/2),200,560)}
 function flyTo(target,dist){const dir=camera.position.clone().sub(controls.target).normalize();if(dir.y<.45){dir.y=.6;dir.normalize()}focus.target.copy(target);focus.pos.copy(target).add(dir.multiplyScalar(dist));focus.active=!reduced;if(reduced){controls.target.copy(focus.target);camera.position.copy(focus.pos)}}
 function fit(){const d=fitDist();focus.target.set(0,-12,0);focus.pos.set(d*.62,d*.5,d*.62);focus.active=!reduced;if(reduced){controls.target.copy(focus.target);camera.position.copy(focus.pos)}}
 function applyView(){const W=stage.clientWidth,H=stage.clientHeight;renderer.setSize(W,H,false);
@@ -793,7 +863,7 @@ function loop(now){
   const dt=Math.min(.1,(now-last)/1000);last=now;const t=reduced?2:now/1000;
   if(world){
     if(focus.active){controls.target.lerp(focus.target,Math.min(1,dt*3));camera.position.lerp(focus.pos,Math.min(1,dt*3));if(camera.position.distanceTo(focus.pos)<.05)focus.active=false}
-    controls.target.x=clamp(controls.target.x,-55,55);controls.target.z=clamp(controls.target.z,-55,55);controls.target.y=clamp(controls.target.y,-40,4);
+    controls.target.x=clamp(controls.target.x,-75,75);controls.target.z=clamp(controls.target.z,-75,75);controls.target.y=clamp(controls.target.y,-40,4);
     controls.update();updateLight(dt);for(const f of anim)f(t,reduced?0:dt);if(!reduced)for(const m of mixers)m.update(dt);
     fallMats.forEach(m=>m.uniforms.t.value=t);
     renderer.render(scene,camera);placeLabels();
