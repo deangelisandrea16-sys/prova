@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Villaggio Jarvis</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#101a19">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sire">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="assets/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400&display=swap">
 <style>
@@ -830,6 +838,7 @@ anim.push(()=>{});
 const ringAnim=t=>{for(const id in rings){const{rr,rs,rad}=rings[id];if(rr.visible){const p=(t*.6)%1;rr.scale.setScalar((rad+.6)*(1+p*.3));rr.material.opacity=(1-p)*.85}rs.visible=id===sel;if(rs.visible)rs.material.opacity=.55+.4*Math.sin(t*3)}};
 const _build=build;build=function(){_build();anim.push(ringAnim)};
 renderSkins();renderDock();applyView();
+if('serviceWorker' in navigator&&location.protocol==='https:'&&!/claude\.ai|claudeusercontent/.test(location.host)){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 })();
 </script>
 
