@@ -1,0 +1,8 @@
+{
+  "name": "sciame-nebulare",
+  "private": true,
+  "description": "Minigioco sparatutto a ondate, statico, senza dipendenze.",
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\""
+  }
+}
