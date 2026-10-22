@@ -1,7 +1,7 @@
 /* Regno di Sire — service worker: avvio veloce e funzionamento offline.
    Pagina: rete prima (così gli aggiornamenti arrivano), cache se offline.
    Modelli, audio, librerie: cache prima (non cambiano spesso). */
-const VERSION='sire-v2';
+const VERSION='sire-v3';
 const CORE=['./','./index.html','./manifest.webmanifest','./assets/kit.json','./assets/Knight.json','./assets/Mage.json','./assets/Rogue_Hooded.json','./assets/Barbarian.json','./assets/coro.mp3','./assets/icon-192.png','./assets/icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
