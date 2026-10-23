@@ -158,8 +158,10 @@ body.gloria .campad{opacity:0;pointer-events:none}
       <div class="ph"><span class="eyebrow">Come funziona</span><button class="close" type="button" id="gd-close" aria-label="Chiudi guida">×</button><h2>Guida del regno</h2><p>Ogni cosa che si muove racconta qualcosa che Jarvis sta facendo.</p></div>
       <section><h3>Il regno</h3><ul class="guide">
         <li><b>Sire</b>: il castello d'oro è il cervello di Jarvis. Toccalo per il ritratto, il tesoro e "Ascolta il Sire", che legge il riassunto del giorno.</li>
-        <li><b>Feudi</b>: ogni agente è un vassallo con il suo villaggio intero: palizzata con quattro porte e torri, rocca con lo stendardo del vassallo, case, strade, campi di grano, mulino e abitanti che ci vivono. Al centro l'edificio dell'agente: mercato = Preventivi, taverna = Outreach, cantiere = Fatture, chiesa = Contatti. Tocca un villaggio per il suo report.</li>
-        <li><b>Isole dei vassalli</b>: dietro ogni feudo c'è l'isola del suo vassallo, con ponte levatoio. A "Uh SIRE!" i ponti si abbassano e i vassalli attraversano il proprio feudo di corsa per unirsi al corteo.</li>
+        <li><b>Capitale</b>: attorno a Sire c'è di nuovo il borgo di sempre, ora molto più grande: ogni agente ha il suo quartiere ricco, con case, stendardi d'oro, lanterne e torri dorate. Mercato = Preventivi, taverna = Outreach, cantiere = Fatture, chiesa = Contatti. Tocca un quartiere per il report. Tutto è chiuso da mura con torri, porte sulle strade e tre vie ad anello piene di case, botteghe e gente; il lago di zucchero è dentro la città.</li>
+        <li><b>Feudi</b>: lontano dalla capitale ogni agente ha anche il feudo del suo vassallo, una città intera con palizzata, rocca con stendardo, case, botteghe, campi di grano, mulino e abitanti. Strade dritte li collegano alla capitale e fra loro.</li>
+        <li><b>Traffico</b>: messaggeri a cavallo, carrozze (quelle d'oro sono della corte) e carri dei mercanti viaggiano di continuo tra capitale e feudi.</li>
+        <li><b>Isole dei vassalli</b>: dietro ogni feudo c'è l'isola del suo vassallo, con ponte levatoio. A "Uh SIRE!" i ponti si abbassano e i vassalli attraversano il feudo di corsa fino al corteo.</li>
         <li><b>Dimensioni</b>: l'isola è 10 volte più grande di prima; usa "Panoramica" per vederla tutta e il doppio tocco per volare su un punto.</li>
         <li><b>Archivio</b>: l'isola-torre della memoria. Cresce di un piano ogni 10 regole imparate.</li>
         <li><b>Porto aereo</b>: per ogni nuovo cliente attracca una nave con le vele del suo nome.</li>
@@ -239,18 +241,18 @@ const AGENTI=[
  {id:'cervello',nome:'Sire',tipo:'Castello d\'oro',ruolo:'Memoria condivisa e regole di Jarvis',stato:'lavora',gx:263,gy:263,castello:true,
   report:{aggiornato:'21:30',fonte:'jarvis-brain/reports/cervello.json',kpi:[['Regole in memoria','48'],['Agenti attivi','2 di 4'],['Servono da te','2'],['Ultima lezione','19:02']],
    attivita:[['19:02','Nuova regola: i preventivi video partono sempre da 3 opzioni'],['15:40','Unite due regole doppie sui follow-up'],['09:10','Backup della memoria completato']],blocchi:[]}},
- {id:'preventivi',nome:'Preventivi',tipo:'Feudo del vassallo',ruolo:'Prepara e segue i preventivi',stato:'lavora',gx:190,gy:135,
+ {id:'preventivi',nome:'Preventivi',tipo:'Feudo del vassallo',ruolo:'Prepara e segue i preventivi',stato:'lavora',gx:225,gy:231,
   report:{aggiornato:'21:12',fonte:'jarvis-brain/reports/preventivi.json',kpi:[['Inviati a ottobre','7'],['In attesa di risposta','3'],['Valore in trattativa','€ 18.400'],['Tasso di chiusura','42%']],
    attivita:[['21:12','Bozza pronta: video hero + sito one-page per un hotel'],['19:40','Follow-up inviato a un ristorante dopo 5 giorni'],['16:05','Listino aggiornato con il pacchetto social']],blocchi:[]}},
- {id:'outreach',nome:'Outreach',tipo:'Feudo del vassallo',ruolo:'Trova e contatta nuovi clienti',stato:'bloccato',gx:341,gy:141,
+ {id:'outreach',nome:'Outreach',tipo:'Feudo del vassallo',ruolo:'Trova e contatta nuovi clienti',stato:'bloccato',gx:301,gy:225,
   report:{aggiornato:'20:48',fonte:'jarvis-brain/reports/outreach.json',kpi:[['Contatti in coda','24'],['Mail della settimana','18'],['Risposte','4'],['Appuntamenti','1']],
    attivita:[['20:48','In pausa: nuovo modello di mail per hotel da approvare'],['18:30','Trovate 12 strutture ricettive tra Rimini e Riccione'],['11:15','Un agriturismo ha risposto e chiede un incontro']],
    blocchi:[{cosa:'Approva il nuovo modello di mail per gli hotel',come:'Rispondi APPROVA o MODIFICA al messaggio su Telegram'}]}},
- {id:'fatture',nome:'Fatture',tipo:'Feudo del vassallo',ruolo:'Scadenze, incassi e solleciti',stato:'cantiere',avanzamento:35,gx:397,gy:311,
+ {id:'fatture',nome:'Fatture',tipo:'Feudo del vassallo',ruolo:'Scadenze, incassi e solleciti',stato:'cantiere',avanzamento:35,gx:295,gy:295,
   report:{aggiornato:'—',fonte:'jarvis-brain/reports/fatture.json',kpi:[['Costruzione','35%'],['Fase attuale','Lettura fatture']],
    attivita:[['22/10','Definito il formato del report'],['21/10','Importato un elenco di scadenze di prova']],
    blocchi:[{cosa:'Accesso in sola lettura alla casella delle fatture',come:'Collega Gmail limitato all\'etichetta Fatture'}]}},
- {id:'contatti',nome:'Contatti',tipo:'Feudo del vassallo',ruolo:'Rubrica clienti e cose da ricordare',stato:'riposo',gx:286,gy:404,
+ {id:'contatti',nome:'Contatti',tipo:'Feudo del vassallo',ruolo:'Rubrica clienti e cose da ricordare',stato:'riposo',gx:231,gy:295,
   report:{aggiornato:'08:00',fonte:'jarvis-brain/reports/contatti.json',kpi:[['Contatti totali','312'],['Nuovi in settimana','9'],['Da ricontattare','14'],['Prossimo giro','domani 08:00']],
    attivita:[['08:00','Giro del mattino: uniti 3 contatti doppi'],['ieri','Aggiunto un contatto da una mail di richiesta']],blocchi:[]}}
 ];
@@ -274,20 +276,29 @@ const tile=new Uint8Array(N*N),shade=new Uint8Array(N*N);
 {const r=rng(7);for(let k=0;k<N*N;k++)shade[k]=Math.floor(r()*4)}
 for(let j=0;j<N;j++)for(let i=0;i<N;i++){const d=Math.hypot((i+.5-208)/8.4,(j+.5-261.5)/10.4)+Math.sin(i*1.7+j)*.05;if(d<1)tile[i+j*N]=3;else if(d<1.3)tile[i+j*N]=4}
 const C=byId.cervello;
-for(const a of AGENTI){const R=a.castello?12:4;
-  for(let j=-R;j<=R;j++)for(let i=-R;i<=R;i++)if(a.castello?Math.max(Math.abs(i),Math.abs(j))<=R:Math.abs(i)+Math.abs(j)<=R+1)tile[(a.gx+i)+(a.gy+j)*N]=1}
+for(const a of AGENTI){const R=a.castello?12:5;
+  for(let j=-R;j<=R;j++)for(let i=-R;i<=R;i++)if(a.castello?Math.max(Math.abs(i),Math.abs(j))<=R:Math.abs(i)+Math.abs(j)<=R+1)tile[(a.gx+i)+(a.gy+j)*N]=1;
+  if(a.castello)continue;let x=C.gx,y=C.gy;
+  for(const w of[0,1]){x=C.gx;y=C.gy+w;while(x!==a.gx){x+=Math.sign(a.gx-x);if(tile[x+y*N]!==1)tile[x+y*N]=2}
+  while(y!==a.gy){y+=Math.sign(a.gy-y);if(tile[x+y*N]!==1)tile[x+y*N]=2}}}
 const tw=(i,j)=>[i*T2-N+1,j*T2-N+1];
 const tileAt=(x,z)=>{const i=Math.floor((x+N)/T2),j=Math.floor((z+N)/T2);return i<0||j<0||i>=N||j>=N?-1:tile[i+j*N]};
 /* feudi dei vassalli: ogni agente ha un villaggio intero, orientato verso Sire */
-const VR=34,VANG={fatture:.35,contatti:1.4,preventivi:4.2,outreach:5.3},VLOC={};
-function vframe(a){if(VLOC[a.id])return VLOC[a.id];const[vx,vz]=tw(a.gx,a.gy),[cx,cz]=tw(C.gx,C.gy);let fx=cx-vx,fz=cz-vz;const l=Math.hypot(fx,fz);fx/=l;fz/=l;const sx=-fz,sz=fx;
+const VR=50,QR=34,VANG={fatture:.35,contatti:1.4,preventivi:4.2,outreach:5.1},VLOC={},FPOS={};
+for(const[id,th]of Object.entries(VANG))FPOS[id]=[Math.round((Math.cos(th)*290+N-1)/2)*2-N+1,Math.round((Math.sin(th)*290+N-1)/2)*2-N+1];
+const LINKS=[['fatture','contatti'],['preventivi','outreach'],['outreach','fatture']];
+function vframe(a){if(VLOC[a.id])return VLOC[a.id];const[vx,vz]=FPOS[a.id],[cx,cz]=tw(C.gx,C.gy);let fx=cx-vx,fz=cz-vz;const l=Math.hypot(fx,fz);fx/=l;fz/=l;const sx=-fz,sz=fx;
   return VLOC[a.id]={vx,vz,fx,fz,sx,sz,P:(u,v)=>[vx+fx*u+sx*v,vz+fz*u+sz*v],ry:(x,z)=>Math.atan2(vx-x,vz-z)}}
 function paint(x0,z0,x1,z1,w){const n=Math.ceil(Math.hypot(x1-x0,z1-z0));for(let k=0;k<=n;k++){const x=x0+(x1-x0)*k/n,z=z0+(z1-z0)*k/n;
   for(let a=-w;a<=w;a+=.7)for(let b=-w;b<=w;b+=.7){if(a*a+b*b>w*w)continue;const i=Math.floor((x+a+N)/T2),j=Math.floor((z+b+N)/T2);if(i<0||j<0||i>=N||j>=N)continue;const q=i+j*N;if(tile[q]===0)tile[q]=2}}}
 for(const a of AGENTI){if(a.castello)continue;const F=vframe(a),[cx,cz]=tw(C.gx,C.gy);
   paint(...F.P(-VR-6,0),...F.P(VR+2,0),1.7);paint(...F.P(0,-VR-2),...F.P(0,VR+2),1.4);
   for(let k=0;k<48;k++){const a0=k/48*Math.PI*2,a1=(k+1)/48*Math.PI*2;paint(...F.P(Math.cos(a0)*20,Math.sin(a0)*20),...F.P(Math.cos(a1)*20,Math.sin(a1)*20),1.1)}
+  for(let k=0;k<64;k++){const a0=k/64*Math.PI*2,a1=(k+1)/64*Math.PI*2;paint(...F.P(Math.cos(a0)*36,Math.sin(a0)*36),...F.P(Math.cos(a1)*36,Math.sin(a1)*36),1.1)}
   paint(...F.P(VR+2,0),cx-F.fx*20.5*1.4,cz-F.fz*20.5*1.4,1.7)}
+/* strade tra feudi vicini e vie ad anello della capitale */
+for(const[a,b]of LINKS){const A=vframe(byId[a]),B=vframe(byId[b]),sa=Math.sign((B.vx-A.vx)*A.sx+(B.vz-A.vz)*A.sz)||1,sb=Math.sign((A.vx-B.vx)*B.sx+(A.vz-B.vz)*B.sz)||1;paint(...A.P(0,sa*(VR+2)),...B.P(0,sb*(VR+2)),1.6)}
+{const[cx,cz]=tw(C.gx,C.gy),LA=Math.atan2(0-cz,-107-cx);for(const R of[64,92,125])for(let k=0;k<160;k++){const a0=k/160*Math.PI*2,a1=(k+1)/160*Math.PI*2;if(R>80&&Math.abs(Math.atan2(Math.sin(a0-LA),Math.cos(a0-LA)))<.42)continue;paint(cx+Math.cos(a0)*R,cz+Math.sin(a0)*R,cx+Math.cos(a1)*R,cz+Math.sin(a1)*R,1.2)}}
 const Rf=th=>480+34*Math.sin(3*th+1)+21*Math.sin(7*th+2)+12*Math.sin(13*th);
 const RIVER_X=-104;
 const isRiver=(x,z)=>Math.abs(x-RIVER_X)<2.2+Math.sin(z*.4)*.3&&z>19;
@@ -296,7 +307,7 @@ const shoreAt=(x,z)=>tileAt(x,z)===4||(Math.abs(x-RIVER_X)<3.4&&z>17)||[[1,0],[-
 const OUTER=[[2.4,'mountain_B_grass_trees',28],[3.3,'mountain_A_grass_trees',26],[4.75,'hills_A_trees',24],[5.85,'mountain_B_grass_trees',26],[.9,'hills_A_trees',22]].map(([th,n,s])=>({n,s,x:Math.cos(th)*370,z:Math.sin(th)*370,r:s*1.6,ry:th}));
 const SPOTS=[{x:-19,z:-122,r:20},{x:30,z:-124,r:19},{x:-122,z:-72,r:17},{x:132,z:-6,r:17},{x:110,z:110,r:15},{x:-96,z:120,r:15},...OUTER.map(o=>({x:o.x,z:o.z,r:o.r}))];
 const gateLane=(x,z)=>{const[cx,cz]=tw(C.gx,C.gy);return Math.abs(x-cx)<6.5&&z>cz+CR-2&&z<cz+CR+26};
-const villDist=(x,z)=>Math.min(...AGENTI.map(a=>{const[cx,cz]=tw(a.gx,a.gy);return Math.hypot(x-cx,z-cz)-(a.castello?CR+4:VR)}));
+const villDist=(x,z)=>{let m=1e9;for(const a of AGENTI){const[cx,cz]=tw(a.gx,a.gy);m=Math.min(m,Math.hypot(x-cx,z-cz)-(a.castello?CR+4:QR));if(!a.castello){const[fx,fz]=FPOS[a.id];m=Math.min(m,Math.hypot(x-fx,z-fz)-VR)}}return m};
 function height(x,z){
   if(water(x,z))return -.8;
   const r=Math.hypot(x,z),edge=Rf(Math.atan2(z,x))-r;
@@ -384,9 +395,9 @@ function instance(name,list,mat,cast=true){
       im.castShadow=cast;im.receiveShadow=true;im.userData.keepGeo=true;world.add(im)}}
 }
 const LODL=[];let lodT=0;
-function lodAdd(root,at){LODL.push({root,ms:null,far:false,at})}
+function lodAdd(root,at,f){LODL.push({root,ms:null,far:false,at,f:f||1})}
 function lodTick(dt){lodT-=dt;if(lodT>0)return;lodT=.3;const D=isMobile()?230:360,D2=D*D,p=camera.position;
-  for(const l of LODL){if(!l.ms){l.ms=[];l.root.traverse(o=>{if(o.isMesh||o.isLine||o.isSprite)l.ms.push(o)})}if(l.at)tmpV.copy(l.at);else l.root.getWorldPosition(tmpV);const far=tmpV.distanceToSquared(p)>D2;if(far!==l.far){l.far=far;for(const m of l.ms)m.layers.set(far?1:0)}}}
+  for(const l of LODL){if(!l.ms){l.ms=[];l.root.traverse(o=>{if(o.isMesh||o.isLine||o.isSprite)l.ms.push(o)})}if(l.at)tmpV.copy(l.at);else l.root.getWorldPosition(tmpV);const far=tmpV.distanceToSquared(p)>D2*l.f*l.f;if(far!==l.far){l.far=far;for(const m of l.ms)m.layers.set(far?1:0)}}}
 const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:lin(c),roughness:.9},o));
 
 /* ---------- isola e roccia ---------- */
@@ -512,7 +523,7 @@ function fire(x,z){
     light.intensity=2.8+Math.sin(t*17)*.5+Math.sin(t*7.3)*.6;core.scale.setScalar(6.5+Math.sin(t*9)*.6);
   });
 }
-function smokeAt(x,y,z){const sp=[],G=new THREE.Group();world.add(G);lodAdd(G,new THREE.Vector3(x,y,z));for(let k=0;k<7;k++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:softTex,color:0xe9e7e2,transparent:true,depthWrite:false,opacity:0}));G.add(s);sp.push(s)}
+function smokeAt(x,y,z){const sp=[],G=new THREE.Group();world.add(G);lodAdd(G,new THREE.Vector3(x,y,z),.6);for(let k=0;k<7;k++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:softTex,color:0xe9e7e2,transparent:true,depthWrite:false,opacity:0}));G.add(s);sp.push(s)}
   anim.push(t=>sp.forEach((s,k)=>{const p=(t*.28+k/7)%1;s.position.set(x+Math.sin(p*4+k)*.3*p+p*1.4,y+p*5,z-p*.5);s.scale.setScalar(.6+p*2);s.material.opacity=(1-p)*.5*(p<.08?p/.08:1)}))}
 function glow(x,y,z,s,color){const g=new THREE.Sprite(new THREE.SpriteMaterial({map:softTex,color:color||0xffb24d,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0}));g.position.set(x,y,z);g.scale.setScalar(s);world.add(g);glows.push(g);return g}
 
@@ -550,12 +561,14 @@ function buildVillages(){
       place('church',cx,cz,{ry:.1});place('home_A',cx-3.6,cz-2.4,{ry:.7});place('home_B',cx+3.6,cz-2.8,{ry:-.3});place('home_A',cx+3.3,cz+2.9,{ry:2.8});place('home_B',cx-3.4,cz+3.1,{ry:1.6});place('well',cx+.6,cz+3.8);
       glow(cx,1.6,cz+1,2.2,0xffd38a);
     }
-    if(!a.castello){feudo(a);rad=VR+2}
+    if(!a.castello){quartiere(a);rad=16}
     const hm=new THREE.Mesh(new THREE.CylinderGeometry(rad,rad,10,12),new THREE.MeshBasicMaterial({visible:false}));hm.position.set(cx,4,cz);hm.userData.id=a.id;world.add(hm);hits.push(hm);
     const rr=ringMesh(0xea5b50);rr.position.set(cx,.08,cz);rr.scale.setScalar(rad+.6);rr.visible=a.stato==='bloccato';world.add(rr);
     const rs=ringMesh(0xd4a94c);rs.position.set(cx,.1,cz);rs.scale.setScalar(rad+1.2);rs.visible=false;world.add(rs);
     rings[a.id]={rr,rs,rad};a.anchor=new THREE.Vector3(cx,anchorY,cz);
   }
+  AGENTI.filter(a=>!a.castello).forEach(a=>{feudo(a);const[x,z]=FPOS[a.id],hm=new THREE.Mesh(new THREE.CylinderGeometry(VR,VR,10,12),new THREE.MeshBasicMaterial({visible:false}));hm.position.set(x,4,z);hm.userData.id=a.id;world.add(hm);hits.push(hm);
+    const l=canvasSprite(`Feudo di ${a.nome}`,{h:4});l.position.set(x,24,z);world.add(l)});
   // montagna di zucchero in mezzo al lago, con isolotto e ponte
   {const isl=new THREE.Mesh(new THREE.CylinderGeometry(6.6,7.2,.6,28),SUGARMAT);isl.position.set(LAKE.x,-.25,LAKE.z);isl.receiveShadow=true;world.add(isl);
    const sm=place('mountain_B',LAKE.x,LAKE.z,{y:0,s:6.8,ry:.6,mat:SUGARMAT});sm.name='sugar-mountain';sm.userData.pulse=0;
@@ -580,7 +593,7 @@ function feudo(a){
   const wdir=(du,dv)=>[F.fx*du+F.sx*dv,F.fz*du+F.sz*dv];
   const casa=(u,v,fu,fv)=>{const[x,z]=P(u,v),[dx,dz]=wdir(fu,fv),it={x,z,s:2.5+r()*.4,ry:Math.atan2(dx,dz)};(r()<.5?HA:HB).push(it);reserve(x,z,4.2);homes.push([x,z]);
     if(r()<.6){const pn=Object.keys(props)[Math.floor(r()*5)],[px,pz]=P(u+fu*3.6+(r()-.5)*2,v+fv*3.6+(r()-.5)*2);props[pn].push({x:px,z:pz,s:S*(.9+r()*.3),ry:r()*6})}};
-  const ds=mob?[10.5,15.5,25]:[10.5,15.5,25,29.5];
+  const ds=mob?[10.5,15.5,25,30,41]:[10.5,15.5,25,30,41,46];
   for(const[eu,ev]of[[1,0],[-1,0],[0,1],[0,-1]])for(const d of ds)for(const sd of[-1,1]){const u=eu*d+(-ev)*sd*6.2,v=ev*d+eu*sd*6.2;if(Math.hypot(u+19,v-19)<9)continue;casa(u,v,ev*sd,-eu*sd)}
   // quarti tra le strade: botteghe e mestieri del feudo, alberi
   const special={preventivi:['market','tent','windmill','tent','well'],outreach:['archeryrange','tent','tavern','tent','well'],fatture:['mine','lumbermill','blacksmith','resource_stone','resource_lumber'],contatti:['church','well','tower_B','home_B','well']}[a.id];
@@ -589,6 +602,8 @@ function feudo(a){
     if(da===0&&si<special.length){const n=special[si++];at(u,v,n,{s:/resource/.test(n)?2.6:n==='tower_B'?2.4:n==='church'?2.2:S})}
     else if(da!==0&&q!==1){const an2=q*Math.PI/2+Math.PI/4+da*.5,[x,z]=P(Math.cos(an2)*18,Math.sin(an2)*18);if(!reserved(x,z))trees.push({x,z,s:S*(1+r()*.3),ry:r()*6})}
     else casa(u,v,-Math.cos(an),-Math.sin(an))}
+  for(const R of[27,43.5]){const n=Math.floor(2*Math.PI*R/7.6);for(let i=0;i<n;i++){if(r()>(mob?.6:.9))continue;const an=(i+.5)/n*Math.PI*2,u=Math.cos(an)*R,v=Math.sin(an)*R,[x,z]=P(u,v);
+    if(Math.abs(u)<7||Math.abs(v)<7||Math.hypot(u+19,v-19)<9||reserved(x,z))continue;casa(u,v,-Math.cos(an),-Math.sin(an))}}
   instance('home_A',HA,BASEMAT);instance('home_B',HB,BASEMAT);for(const n in props)instance(n,props[n],BASEMAT);instance('tree_single_A',trees,foliageMat);
   // rocca del vassallo con stendardo in cima
   {const g=at(-19,19,"tower_B",{s:3}),[x,z]=P(-19,19);let top=height(x,z)+9;if(g){const b=new THREE.Box3().setFromObject(g);top=b.max.y}
@@ -605,16 +620,38 @@ function feudo(a){
   {const[x,z]=P(-VR-12,-30);place('windmill',x,z,{ry:F.ry(x,z),s:2.6})}
   // vita del villaggio: fumo dai camini, finestre accese, abitanti
   homes.forEach(([x,z],i)=>{if(i%3===0)smokeAt(x+.6,3.6,z-.4);if(i%2===0)glow(x,1.4,z,2.2,0xffcf6e)});
-  const kinds=['Knight','Mage','Rogue_Hooded','Barbarian'],nv=mob?5:9;
+  const kinds=['Knight','Mage','Rogue_Hooded','Barbarian'],nv=mob?6:12;
   for(let i=0;i<nv;i++){const st=V(...P((r()-.5)*10,(r()-.5)*10)),sp=1.5+r()*1.1,c=citizen(kinds[i%4],st,{s:.36+r()*.08,hue:r(),anim:'Walking_A',shadow:i%3===0});if(!c)continue;
     const w={m:c.m,play:(n,ts)=>c.play(n==='Running_A'?'Walking_A':n,n==='Running_A'?sp/1.7:ts)},mv=mover(w,sp),rr=rng(i*53+k*7);
     anim.push((t,dt)=>{if(t<FREEZE)return;mv(dt,()=>{const v=rr(),side=rr()<.5?-1:1;
-      if(v<.3)return{pts:[V(...P(0,side*(8+rr()*20))),V(...P(0,0))]};
-      if(v<.55)return{pts:[V(...P(-(8+rr()*22),0)),V(...P(0,0))]};
-      if(v<.75)return{pts:[V(...P(8+rr()*24,0)),V(...P(0,0))]};
-      if(v<.9){const an=rr()*Math.PI*2;return{pts:[V(...P(0,side*20)),V(...P(Math.cos(an)*20,Math.sin(an)*20)),V(...P(0,side*20)),V(...P(0,0))]}}
+      if(v<.3)return{pts:[V(...P(0,side*(8+rr()*36))),V(...P(0,0))]};
+      if(v<.55)return{pts:[V(...P(-(8+rr()*36),0)),V(...P(0,0))]};
+      if(v<.75)return{pts:[V(...P(8+rr()*38,0)),V(...P(0,0))]};
+      if(v<.9){const an=rr()*Math.PI*2,R=rr()<.5?20:36;return{pts:[V(...P(0,side*R)),V(...P(Math.cos(an)*R,Math.sin(an)*R)),V(...P(0,side*R)),V(...P(0,0))]}}
       return{pts:[],wait:2+rr()*3,anim:rr()<.5?'Interact':'Cheer'}})})}
   for(let i=0;i<(mob?1:3);i++){const side=i%2?1:-1,p=V(...P(-VR-9-i*5,side*(9+i*3)));citizen(kinds[(i+2)%4],p,{s:.4,anim:i%2?'PickUp':'Use_Item',ts:.8,ry:r()*6,hue:r(),shadow:false})}
+}
+function quartiere(a){ // il borgo ricco attorno all'edificio dell'agente
+  const[cx,cz]=tw(a.gx,a.gy),[sx,sz]=tw(C.gx,C.gy),r=rng(a.gx*13+a.gy),mob=isMobile(),k=['fatture','contatti','preventivi','outreach'].indexOf(a.id),col=VCOL[k];
+  const H={home_A:[],home_B:[]},props={barrel:[],crate_A_big:[],sack:[],crate_B_small:[]},homes=[];
+  const road=(x,z)=>[[0,0],[2.6,0],[-2.6,0],[0,2.6],[0,-2.6]].some(([p,q])=>{const t=tileAt(x+p,z+q);return t===1||t===2});
+  for(const[R,step]of[[12.5,6.2],[18.5,6.2],[24.5,6.3],[30.5,6.4]]){const n=Math.floor(2*Math.PI*R/step),ph=r();for(let i=0;i<n;i++){if(r()>(mob?.9:1))continue;const an=(i+ph)/n*Math.PI*2,x=cx+Math.cos(an)*R,z=cz+Math.sin(an)*R;
+    if(road(x,z)||reserved(x,z)||water(x,z)||shoreAt(x,z)||Math.hypot(x-LAKE.x,z-LAKE.z)<26||Math.hypot(x-sx,z-sz)<CR*1.95+5)continue;
+    H[r()<.5?'home_A':'home_B'].push({x,z,s:2.3+r()*.5,ry:Math.atan2(cx-x,cz-z)});reserve(x,z,3);homes.push([x,z]);
+    if(r()<.45){const pn=Object.keys(props)[Math.floor(r()*4)],px=x+(cx-x)/R*4+(r()-.5)*2,pz=z+(cz-z)/R*4+(r()-.5)*2;props[pn].push({x:px,z:pz,s:S,ry:r()*6})}}}
+  for(const n in H)instance(n,H[n],BASEMAT);for(const n in props)instance(n,props[n],BASEMAT);
+  // sfarzo: stendardi dorati dell'agente, lanterne, fontana, torri d'oro agli angoli
+  for(let i=0;i<4;i++){const an=i/4*Math.PI*2+.785,x=cx+Math.cos(an)*10,z=cz+Math.sin(an)*10;if(road(x,z))continue;
+    const f=flagFor(col[0],col[1]);f.g.scale.setScalar(3.2);f.g.position.set(x,height(x,z),z);world.add(f.g);anim.push(t=>f.wave(t+i+k,1));
+    const pole=new THREE.Mesh(new THREE.CylinderGeometry(.12,.16,.6,8),GOLD);pole.position.set(x,height(x,z)+.3,z);world.add(pole);glow(x,height(x,z)+5.4,z,2.6,0xffcf6e)}
+  for(let i=0;i<4;i++){const an=i/4*Math.PI*2,R=QR+.5,x=cx+Math.cos(an)*R,z=cz+Math.sin(an)*R;if(road(x,z)||water(x,z)||Math.hypot(x-LAKE.x,z-LAKE.z)<26||Math.hypot(x-sx,z-sz)<CR*1.95+5)continue;place('tower_A',x,z,{s:2,ry:-an,mat:GOLD})}
+  homes.forEach(([x,z],i)=>{if(i%4===0)smokeAt(x+.6,3.6,z-.4);if(i%3===0)glow(x,1.4,z,2.2,0xffcf6e)});
+  sparkles(cx,cz,QR*.6,8,0xffe6a0);
+  // gente del borgo
+  const kinds=['Knight','Mage','Rogue_Hooded','Barbarian'];
+  for(let i=0;i<(mob?6:14);i++){const an0=r()*6.28,st=V(cx+Math.cos(an0)*8,cz+Math.sin(an0)*8),sp=1.4+r()*1.1,c=citizen(kinds[i%4],st,{s:.36+r()*.08,hue:r(),anim:'Walking_A',shadow:i%3===0});if(!c)continue;
+    const w={m:c.m,play:(n,ts)=>c.play(n==='Running_A'?'Walking_A':n,n==='Running_A'?sp/1.7:ts)},mv=mover(w,sp),rr=rng(i*29+k*11);
+    anim.push((t,dt)=>{if(t<FREEZE)return;mv(dt,()=>{if(rr()<.2)return{pts:[],wait:2+rr()*3,anim:rr()<.5?'Interact':'Cheer'};const an=rr()*6.28,R=[8,17.5,24.5][Math.floor(rr()*3)];return{pts:[V(cx+Math.cos(an)*R,cz+Math.sin(an)*R),V(cx+Math.cos(an+.6)*R,cz+Math.sin(an+.6)*R)]}})})}
 }
 function ringMesh(color){const m=new THREE.Mesh(new THREE.RingGeometry(.93,1,64),new THREE.MeshBasicMaterial({color:lin(color),transparent:true,opacity:.8,depthWrite:false,side:THREE.DoubleSide}));m.rotation.x=-Math.PI/2;m.renderOrder=2;return m}
 
@@ -625,9 +662,10 @@ function reserveZones(){
   Object.values(VANG).forEach(th=>{const e=Rf(th);reserveSeg(Math.cos(th)*(e+1),Math.sin(th)*(e+1),cx+Math.cos(th)*CR*1.7,cz+Math.sin(th)*CR*1.7,4.5)});
   reserve(cx,cz-62,16);reserveSeg(cx-14,cz-62,cx+14,cz-62,9);
   {const th=.85,e=Rf(th);reserveSeg(Math.cos(th)*(e-14),Math.sin(th)*(e-14),Math.cos(th)*(e+2),Math.sin(th)*(e+2),9)}
-  AGENTI.filter(a=>!a.castello).forEach(a=>{const p=roadPath(a,0);for(let i=1;i<p.length;i++)reserveSeg(p[i-1].x,p[i-1].z,p[i].x,p[i].z,3.5)});
+  AGENTI.filter(a=>!a.castello).forEach(a=>{for(const p of[roadPath(a,0),feudoPath(a,0)])for(let i=1;i<p.length;i++)reserveSeg(p[i-1].x,p[i-1].z,p[i].x,p[i].z,3.5);const[vx,vz]=tw(a.gx,a.gy);reserve(vx,vz,QR+2)});
+  for(const[a,b]of LINKS){const A=linkGate(byId[a],byId[b]),B=linkGate(byId[b],byId[a]);reserveSeg(A.gate[0],A.gate[1],B.gate[0],B.gate[1],3.5)}
 }
-function forest(){reserveZones();
+function forest(){if(!ZONES)reserveZones();
   const r=rng(42),T={A:[],B:[],SA:[],SB:[],AS:[],BS:[]},rocks={A:[],C:[],E:[]},plants=[];
   for(let k=0;k<(isMobile()?5000:15000);k++){const th=r()*Math.PI*2,rad=Math.sqrt(r())*(Rf(th)-2),x=Math.cos(th)*rad,z=Math.sin(th)*rad;
     const t=tileAt(x,z);if(water(x,z)){if(r()<.25)plants.push({x,z,y:-.29,s:3*r()+2,ry:r()*6});continue}
@@ -680,7 +718,9 @@ function mover(c,speed,obj){ // segue una coda di punti; i punti con .act fanno 
 }
 const V=(x,z)=>new THREE.Vector3(x,groundY(x,z),z);
 const CR=20.5; // raggio esterno delle mura di Sire
-function roadPath(a,off){const F=vframe(a),[cx,cz]=tw(C.gx,C.gy),nx=F.sx*off,nz=F.sz*off;
+function roadPath(a,off){const[vx,vz]=tw(a.gx,a.gy),[cx,cz]=tw(C.gx,C.gy);const sx=Math.sign(vx-cx),sz=Math.sign(vz-cz);
+  return[V(cx+sx*CR,cz+1+off),V(vx+off,cz+1+off),V(vx+off,vz-sz*7)]}
+function feudoPath(a,off){const F=vframe(a),[cx,cz]=tw(C.gx,C.gy),nx=F.sx*off,nz=F.sz*off;
   return[V(cx-F.fx*CR*1.55+nx,cz-F.fz*CR*1.55+nz),V(...F.P(VR+2,off)),V(...F.P(9,off))]}
 const VILLAGES=()=>AGENTI.filter(a=>!a.castello&&a.id!=='outreach');
 const ring=()=>{const[cx,cz]=tw(C.gx,C.gy);return[[-CR,CR],[CR,CR],[CR,-CR],[-CR,-CR]].map(([x,z])=>V(cx+x,cz+z))};
@@ -689,7 +729,7 @@ function ringRoute(p,tg){const[cx,cz]=tw(C.gx,C.gy);if(!p||Math.hypot(p.x-cx,p.z
   for(let i=1;i<n;i++){const a=a0+d*i/n;pts.push(V(cx+Math.cos(a)*R,cz+Math.sin(a)*R))}return pts}
 function trip(r,p){ // Sire → villaggio → giro → ritorno
   const list=VILLAGES(),a=list[Math.floor(r()*list.length)],off=(r()-.5)*1.6,go=roadPath(a,off);const[vx,vz]=tw(a.gx,a.gy);
-  const F=vframe(a),sd=r()<.5?-1:1,wander=[V(...F.P(0,0)),V(...F.P(0,sd*(8+r()*20))),V(...F.P(0,0)),V(...F.P(-(6+r()*20),0)),V(...F.P(0,0))];
+  const wander=[0,1,2].map(()=>{const an=r()*Math.PI*2,rr=3+r()*9;return V(vx+Math.cos(an)*rr,vz+Math.sin(an)*rr)});
   return{pts:[...ringRoute(p,go[0]),...go,...wander,...go.slice().reverse()]};
 }
 function sugarTrip(r,p){ // Sire → ponte → montagna di zucchero → ritorno con lo zucchero → consegna in un villaggio
@@ -746,7 +786,7 @@ function people(){
   {const[x,z]=tw(K.gx,K.gy);citizen('Mage',V(x+2.2,z+2.2),{ry:-2.2,anim:'Sit_Floor_Idle'});citizen('Barbarian',V(x-1.4,z+4.2),{ry:1.2,anim:'Lie_Idle'})}
   {const[x,z]=tw(C.gx,C.gy);citizen('Knight',V(x-1.8,z+CR+.4),{anim:'Idle',armed:true});citizen('Knight',V(x+1.8,z+CR+.4),{anim:'Idle',armed:true})}
   {const[x,z]=tw(C.gx,C.gy);wavers(x,z);vassalIslands();VASSALS.forEach((v,i)=>v.slot=WAVERS.length+i);parade()}
-  ANTS=crowd(isMobile()?60:120);riders(isMobile()?12:24);
+  ANTS=crowd(isMobile()?70:150);riders(isMobile()?12:26);
 }
 let ANTS=[];
 
@@ -1065,7 +1105,7 @@ function goldRain(){if(!TREASURE||!COINS)return;for(let k=0;k<70;k++)setTimeout(
 /* ---------- 2. ora vera, meteo, stagioni ---------- */
 const TORCHES=[];let RAIN=null,lightning=0,PATROLS=[];
 function torches(){
-  const pts=[];AGENTI.filter(a=>!a.castello).forEach(a=>{const p=roadPath(a,0),n=Math.max(1,Math.floor(p[0].distanceTo(p[1])/40));for(let i=1;i<=n;i++)pts.push(V(lerp(p[0].x,p[1].x,i/n)+1.6,lerp(p[0].z,p[1].z,i/n)));pts.push(p[2])});const[cx,cz]=tw(C.gx,C.gy);for(let i=0;i<8;i++){const a=i/8*Math.PI*2;pts.push(V(cx+Math.cos(a)*(CR+.4),cz+Math.sin(a)*(CR+.4)))}
+  const pts=[];AGENTI.filter(a=>!a.castello).forEach(a=>{roadPath(a,0).forEach((p,i)=>{if(i)pts.push(p)});const p=feudoPath(a,0),n=Math.max(1,Math.floor(p[0].distanceTo(p[1])/40));for(let i=1;i<=n;i++)pts.push(V(lerp(p[0].x,p[1].x,i/n)+1.6,lerp(p[0].z,p[1].z,i/n)));pts.push(p[2])});const[cx,cz]=tw(C.gx,C.gy);for(let i=0;i<8;i++){const a=i/8*Math.PI*2;pts.push(V(cx+Math.cos(a)*(CR+.4),cz+Math.sin(a)*(CR+.4)))}
   pts.forEach(p=>{const pole=new THREE.Mesh(new THREE.CylinderGeometry(.05,.07,1.6,5),M(0x3a2414));pole.position.set(p.x+.9,p.y+.8,p.z+.9);world.add(pole);
     const f=glow(p.x+.9,p.y+1.75,p.z+.9,1.6,0xffa040);TORCHES.push(f)});
 }
@@ -1532,7 +1572,7 @@ function profezia(mago){const c=DEMO.clienti.slice().sort((a,b)=>b.silenzio-a.si
 
 /* 13. carovana dei vassalli stranieri */
 function carovana(nome){
-  nome=nome||DEMO.estero[Math.floor(Math.random()*DEMO.estero.length)];const[cx,cz]=SC(),th=1.05,e=Rf(th),start=new THREE.Vector3(Math.cos(th)*(e-3),0,Math.sin(th)*(e-3)),end=new THREE.Vector3(cx+9,0,cz+CR+7);
+  nome=nome||DEMO.estero[Math.floor(Math.random()*DEMO.estero.length)];const[cx,cz]=SC(),th=1.2,e=Rf(th),start=new THREE.Vector3(Math.cos(th)*(e-3),0,Math.sin(th)*(e-3)),end=new THREE.Vector3(cx+9,0,cz+CR+7);
   const sand=M(0xc9a46a),cloth=[M(0x16697a),M(0xb3591a),M(0x5b2a86)],items=[];
   for(let k=0;k<4;k++){const g=new THREE.Group(),b=(w,h,d,x,y,z,m)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;g.add(o);return o};
     b(.9,.8,2,0,1.6,0,sand);b(.5,.6,.5,0,2.3,0,sand);b(.4,1.1,.4,0,2,1.1,sand).rotation.x=-.5;b(.45,.4,.7,0,2.6,1.5,sand);b(1.1,.15,1.4,0,2.05,0,cloth[k%3]);
@@ -1543,12 +1583,12 @@ function carovana(nome){
   anim.push((t,dt)=>{if(!lbl.parent)return;s+=dt*3.2;items.forEach(it=>{const u=clamp((s-it.off)/L,0,1),p=start.clone().lerp(end,u);p.y=height(p.x,p.z);it.g.position.copy(p);it.g.rotation.y=Math.atan2(end.x-start.x,end.z-start.z);it.legs.forEach((l,i)=>l.rotation.x=u>0&&u<1?Math.sin(t*6+i*1.6)*.5:0)});
     lbl.position.copy(items[0].g.position).setY(items[0].g.position.y+7);if(s>L+16){items.forEach(it=>world.remove(it.g));world.remove(lbl);FIREWORKS&&FIREWORKS.launch(end.x,end.z,3)}});
 }
-function reserveCarovana(){const[cx,cz]=SC(),th=1.05,e=Rf(th);reserveSeg(Math.cos(th)*e,Math.sin(th)*e,cx+9,cz+CR+7,5)}
+function reserveCarovana(){const[cx,cz]=SC(),th=1.2,e=Rf(th);reserveSeg(Math.cos(th)*e,Math.sin(th)*e,cx+9,cz+CR+7,5)}
 
 /* 14. scuola dei cavalieri */
 let SCUOLA=null;
 function scuola(){
-  const[cx,cz]=SC(),x0=cx-46,z0=cz-30;reserve(x0,z0,11);
+  const[cx,cz]=SC(),x0=cx+8,z0=cz-100;reserve(x0,z0,11);
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(18,12),M(0xc7b07c,{roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.set(x0,height(x0,z0)+.05,z0);world.add(ground);
   for(let i=0;i<4;i++){const d=new THREE.Mesh(new THREE.CylinderGeometry(.25,.3,2,6),M(0x8a6a44));d.position.set(x0-6+i*4,height(x0,z0)+1,z0+3.5);world.add(d)}
   const lbl=canvasSprite('Scuola dei cavalieri',{h:1.3});lbl.position.set(x0,height(x0,z0)+7,z0);world.add(lbl);
@@ -1721,7 +1761,7 @@ function fulmineDorato(){const[cx,cz]=SC(),top=new THREE.Vector3(cx,29,cz),pts=[
 /* 45. cantiere dell'impossibile */
 let IMPOSSIBILE=null;
 function cantiereImpossibile(){
-  const x=-40,z=38,y=height(x,z);reserve(x,z,14);const g=new THREE.Group();g.position.set(x,y,z);world.add(g);const stone=M(0xb7ab96),dark=M(0x8a7c68),wood=M(0x9a7444);
+  const x=-25,z=105,y=height(x,z);reserve(x,z,14);const g=new THREE.Group();g.position.set(x,y,z);world.add(g);const stone=M(0xb7ab96),dark=M(0x8a7c68),wood=M(0x9a7444);
   const piani=[];const add=i=>{const f=new THREE.Group();f.position.y=i*6;const c=new THREE.Mesh(new THREE.CylinderGeometry(7-i*.25,7.3-i*.25,6,14),i%2?stone:dark);c.position.y=3;c.castShadow=true;c.receiveShadow=true;f.add(c);
     for(let k=0;k<6;k++){const a=k/6*Math.PI*2+i,w=new THREE.Mesh(new THREE.BoxGeometry(1,1.8,.2),M(0x2a1a0a));w.position.set(Math.cos(a)*(7-i*.25),3.4,Math.sin(a)*(7-i*.25));w.rotation.y=-a+Math.PI/2;f.add(w)}g.add(f);piani.push(f);return f};
   for(let i=0;i<DEMO.cantiere.piani;i++)add(i);
@@ -1806,6 +1846,90 @@ function meraviglieHTML(){const b=(ev,t,dis)=>`<button type="button" class="ev" 
     ${b('m-eclisse',ECL.manuale?'Fine eclisse':'Eclisse')}${b('m-aurora','Obiettivo del mese')}${b('m-lucciole','Lucciole')}${b('m-stelle','Costellazione')}
     ${b('m-cervi','Cervi bianchi')}${b('m-cartolina','Cartolina')}</div></section>`}
 
+/* =================== CAPITALE E TRAFFICO =================== */
+let ZONES=false;
+const RW=150; // raggio delle mura della capitale
+const tileRoad=(x,z)=>{const t=tileAt(x,z);return t===1||t===2};
+function capBad(x,z,m=3){return water(x,z)||shoreAt(x,z)||Math.hypot(x-LAKE.x,z-LAKE.z)<24+m||(Math.abs(x-RIVER_X)<6+m&&z>15)||SPOTS.some(s=>Math.hypot(x-s.x,z-s.z)<s.r+m)}
+function capitale(){
+  reserveZones();ZONES=true;
+  const[cx,cz]=tw(C.gx,C.gy),r=rng(99),mob=isMobile();
+  // mura con torri; le porte si aprono da sole dove passano strade, corsie e corteo
+  const wb=KIT.wall_straight;
+  if(wb){const b=new THREE.Box3().setFromObject(wb),wx=b.max.x-b.min.x,wz=b.max.z-b.min.z,ws=2.4,len=Math.max(wx,wz)*ws*.98,n=Math.floor(2*Math.PI*RW/len),list=[],okA=[];
+    for(let i=0;i<n;i++){const an=(i+.5)/n*Math.PI*2,x=cx+Math.cos(an)*RW,z=cz+Math.sin(an)*RW;okA.push(!reserved(x,z)&&!capBad(x,z,2)&&!tileRoad(x,z)&&!tileRoad(x+Math.cos(an+1.57)*3,z+Math.sin(an+1.57)*3)&&!tileRoad(x-Math.cos(an+1.57)*3,z-Math.sin(an+1.57)*3))}
+    for(let i=0;i<n;i++){const an=(i+.5)/n*Math.PI*2,x=cx+Math.cos(an)*RW,z=cz+Math.sin(an)*RW;
+      if(okA[i]){list.push({x,z,s:ws,ry:wx>wz?-an-Math.PI/2:-an});reserve(x,z,3.2)}
+      const nx=okA[(i+1)%n];if(okA[i]!==nx||(okA[i]&&i%14===0)){const at=okA[i]?an+(okA[i]!==nx?Math.PI/n:0):an+Math.PI*2/n,tx=cx+Math.cos(at)*RW,tz=cz+Math.sin(at)*RW;if(!capBad(tx,tz,1))place('tower_A',tx,tz,{s:2.6,ry:-at})}}
+    instance('wall_straight',list,BASEMAT)}
+  // quartieri: anelli di case tra le strade, botteghe e mestieri sparsi
+  const T={home_A:[],home_B:[],tavern:[],market:[],blacksmith:[],well:[],church:[],barracks:[],lumbermill:[]},props={barrel:[],crate_A_big:[],sack:[],wheelbarrow:[],crate_B_small:[]},homes=[];
+  const pick=()=>{const v=r();return v<.38?'home_A':v<.76?'home_B':v<.81?'tavern':v<.86?'market':v<.9?'blacksmith':v<.94?'well':v<.96?'church':v<.98?'barracks':'lumbermill'};
+  const free=(x,z)=>!reserved(x,z)&&!capBad(x,z)&&[[0,0],[2.6,0],[-2.6,0],[0,2.6],[0,-2.6]].every(([a,b])=>!tileRoad(x+a,z+b)&&!reserved(x+a,z+b));
+  for(let R=47;R<RW-5;R+=6.1){if(Math.abs(R-64)<4.2||Math.abs(R-92)<4.2||Math.abs(R-125)<4.2)continue;const n=Math.floor(2*Math.PI*R/6.4),ph=r();
+    for(let i=0;i<n;i++){if(r()>(mob?.85:1))continue;const an=(i+ph)/n*Math.PI*2,x=cx+Math.cos(an)*R,z=cz+Math.sin(an)*R;if(!free(x,z))continue;
+      const name=pick(),inward=(R<78?R>64:R<108?R>92:R>125),ry=inward?Math.atan2(cx-x,cz-z):Math.atan2(x-cx,z-cz),s=/home/.test(name)?2.4+r()*.5:name==='church'?2.1:S;
+      T[name].push({x,z,s,ry:ry+(r()-.5)*.2});reserve(x,z,/home|well/.test(name)?3:5);if(/home/.test(name))homes.push([x,z]);
+      if(r()<.4){const pn=Object.keys(props)[Math.floor(r()*5)],d=4+r()*1.5,px=x+Math.sin(ry)*d+(r()-.5)*2,pz=z+Math.cos(ry)*d+(r()-.5)*2;if(!tileRoad(px,pz))props[pn].push({x:px,z:pz,s:S*(.9+r()*.3),ry:r()*6})}}}
+  for(const n in T)instance(n,T[n],BASEMAT);for(const n in props)instance(n,props[n],BASEMAT);
+  homes.forEach(([x,z],i)=>{if(i%9===0)smokeAt(x+.6,3.6,z-.4);if(i%6===0)glow(x,1.4,z,2.2,0xffcf6e)});
+  {const l=canvasSprite('Capitale del regno',{h:5});l.position.set(cx,52,cz);world.add(l);lodAdd(l,new THREE.Vector3(cx,52,cz))}
+  // cittadini che passeggiano sulle vie ad anello
+  const kinds=['Knight','Mage','Rogue_Hooded','Barbarian'],LAKEA=Math.atan2(LAKE.z-cz,LAKE.x-cx);
+  const okAng=(R,an)=>R<80||Math.abs(Math.atan2(Math.sin(an-LAKEA),Math.cos(an-LAKEA)))>.42;
+  for(let i=0;i<(mob?10:26);i++){const R=[64,92,125][Math.floor(r()*3)];let an=r()*Math.PI*2;if(!okAng(R,an))an+=1;
+    const sp=1.5+r()*1.2,c=citizen(kinds[i%4],V(cx+Math.cos(an)*R,cz+Math.sin(an)*R),{s:.36+r()*.08,hue:r(),anim:'Walking_A',shadow:i%3===0});if(!c)continue;
+    const w={m:c.m,play:(n,ts)=>c.play(n==='Running_A'?'Walking_A':n,n==='Running_A'?sp/1.7:ts)},mv=mover(w,sp),rr=rng(i*71+3);let ring=R,cur=an;
+    anim.push((t,dt)=>{if(t<FREEZE)return;mv(dt,()=>{if(rr()<.15)return{pts:[],wait:2+rr()*4,anim:rr()<.5?'Interact':'Cheer'};
+      if(rr()<.25){const nr=[64,92,125].filter(x=>x!==ring)[Math.floor(rr()*2)];if(okAng(nr,cur)){ring=nr;return{pts:[V(cx+Math.cos(cur)*ring,cz+Math.sin(cur)*ring)]}}}
+      const d=(rr()<.5?-1:1)*(.3+rr()*.9),pts=[];for(let k=1;k<=8;k++){const a=cur+d*k/8;if(!okAng(ring,a))break;pts.push(V(cx+Math.cos(a)*ring,cz+Math.sin(a)*ring));cur=a}
+      return pts.length?{pts}:{pts:[],wait:1}})})}
+}
+
+/* ---------- traffico tra le città: messaggeri a cavallo, carrozze, carri ---------- */
+function linkGate(a,b){const F=vframe(a),G=vframe(b),s=Math.sign((G.vx-F.vx)*F.sx+(G.vz-F.vz)*F.sz)||1;return{s,gate:F.P(0,s*(VR+3)),inner:F.P(0,s*10)}}
+function traffico(){
+  const mob=isMobile(),r=rng(4242),[cx,cz]=tw(C.gx,C.gy),VIL=['fatture','contatti','preventivi','outreach'];
+  const linked=(a,b)=>LINKS.some(([x,y])=>x===a&&y===b||x===b&&y===a);
+  const arc=(p,q,R)=>{const a0=Math.atan2(p.z-cz,p.x-cx),a1=Math.atan2(q.z-cz,q.x-cx),d=Math.atan2(Math.sin(a1-a0),Math.cos(a1-a0)),n=Math.max(1,Math.ceil(Math.abs(d)/.2)),out=[];for(let i=0;i<=n;i++){const a=a0+d*i/n;out.push(V(cx+Math.cos(a)*R,cz+Math.sin(a)*R))}return out};
+  const RA=CR*2;
+  const route=(from,to,off)=>{
+    if(from==='capitale'){const go=feudoPath(byId[to],off);return[...arc(go[0],go[0],RA),...go]}
+    const back=feudoPath(byId[from],off).reverse();
+    if(to==='capitale')return[...back,...arc(back[back.length-1],V(cx+Math.cos(r()*6.28)*RA,cz+Math.sin(r()*6.28)*RA),RA)];
+    if(linked(from,to)){const A=linkGate(byId[from],byId[to]),B=linkGate(byId[to],byId[from]),o=off*.5;return[V(...A.inner),V(A.gate[0]+o,A.gate[1]+o),V(B.gate[0]+o,B.gate[1]+o),V(...B.inner)]}
+    const go=feudoPath(byId[to],off);return[...back,...arc(back[back.length-1],go[0],RA),...go]};
+  const dests=from=>['capitale',...VIL].filter(x=>x!==from);
+  const travel=(obj,sp,tick,startCity)=>{let city=startCity,mv=mover({m:obj,play:()=>{}},sp,obj),last=obj.position.clone(),moving=0;const rr=rng(Math.floor(r()*1e6));
+    anim.push((t,dt)=>{if(t<FREEZE)return;mv(dt,()=>{if(rr()<.25)return{pts:[],wait:2+rr()*5};const ds=dests(city),to=ds[Math.floor(rr()*ds.length)],pts=route(city,to,(rr()<.5?-1:1)*(.8+rr()*.6));city=to;return{pts}});
+      const d=obj.position.distanceTo(last);last.copy(obj.position);moving=dt>0?d/dt:0;tick(t,dt,moving)})};
+  const startAt=city=>{if(city==='capitale'){const a=r()*6.28;return V(cx+Math.cos(a)*RA,cz+Math.sin(a)*RA)}const F=vframe(byId[city]);return V(...F.P(9,0))};
+  const gallop=(h,t,mv,k)=>{if(mv<.2){h.legs.forEach(l=>l.rotation.x*=.85);return}const w=t*(mv*1.1)+k;h.legs.forEach((l,i)=>l.rotation.x=Math.sin(w+[0,.6,Math.PI,Math.PI+.6][i])*.85);h.body.position.y=Math.abs(Math.sin(w))*.07;h.neck.rotation.x=-.6+Math.sin(w+1)*.12};
+  const coats=[[0x7a4a2a,0x2b1d14],[0x3b2a20,0x14100c],[0xe9e3d6,0xbfb6a6],[0x8c8c8c,0x3a3a3a],[0xa0522d,0x5a2a14],[0x1a1a1a,0x050505]];
+  const cities=['capitale',...VIL];
+  // messaggeri a cavallo con pennacchio e borsa delle lettere
+  for(let k=0;k<(mob?5:12);k++){const city=cities[k%5],[co,ma]=coats[k%coats.length],h=horse(co,ma);h.g.scale.setScalar(1.15);h.g.position.copy(startAt(city));world.add(h.g);
+    citizen(['Rogue_Hooded','Knight'][k%2],new THREE.Vector3(0,.58,-.02),{s:.27,hue:r(),anim:'Sit_Chair_Idle',parent:h.body,armed:false,shadow:false});
+    const bag=new THREE.Mesh(new THREE.BoxGeometry(.14,.16,.2),M(0x6b4423));bag.position.set(.24,.62,-.25);h.body.add(bag);
+    const f=flagFor(...VCOL[k%4]);f.g.scale.setScalar(.6);f.g.position.set(-.12,.75,-.4);h.body.add(f.g);
+    travel(h.g,10+r()*3,(t,dt,mv)=>{gallop(h,t,mv,k);if(mv>.2)f.wave(t+k,2)},city)}
+  // carrozze e carri dei mercanti
+  const wood=M(0x5a3a1e),dark=M(0x2a1a0e),GOLDT=GOLD,tops=[0x7a1f1f,0x1f3f8a,0x2d6a3e,0x5b2a86,0xb3591a];
+  const vehicle=(k,royal,cargo)=>{const G=new THREE.Group(),h=horse(...coats[(k+2)%coats.length]);h.g.scale.setScalar(1.15);h.g.position.z=1.25;G.add(h.g);
+    const box=(w,hh,d,x,y,z,m)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,hh,d),m);o.position.set(x,y,z);o.castShadow=true;G.add(o);return o};
+    box(1.1,.12,1.9,0,.55,-.6,wood);box(.06,.06,1.3,-.25,.6,.75,dark);box(.06,.06,1.3,.25,.6,.75,dark);
+    if(cargo){box(1.1,.35,.05,0,.75,.35,wood);box(1.1,.35,.05,0,.75,-1.55,wood);box(.05,.35,1.9,.55,.75,-.6,wood);box(.05,.35,1.9,-.55,.75,-.6,wood);
+      for(let i=0;i<4;i++)box(.36,.32,.36,(i%2-.5)*.45,.86,-.2-Math.floor(i/2)*.65,M([0x9a7444,0x8a5a2a,0xc9b48a][i%3]));}
+    else{box(1.05,.8,1.4,0,1.02,-.75,royal?GOLDT:wood);box(1.15,.12,1.5,0,1.48,-.75,royal?GOLDT:M(tops[k%tops.length]));box(.9,.06,.4,0,.85,.2,dark);
+      for(const sx of[-1,1])box(.02,.3,.4,sx*.53,1.1,-.75,M(0xf3ecdc));}
+    const wheels=[];for(const[x,z]of[[-.6,-.1],[.6,-.1],[-.6,-1.15],[.6,-1.15]]){const wgeo=new THREE.CylinderGeometry(.34,.34,.08,12);wgeo.rotateZ(Math.PI/2);const w=new THREE.Mesh(wgeo,dark);w.position.set(x,.34,z);G.add(w);wheels.push(w)}
+    citizen(k%2?'Barbarian':'Knight',new THREE.Vector3(0,cargo?.62:.9,.25),{s:.27,hue:r(),anim:'Sit_Chair_Idle',parent:G,shadow:false});
+    if(royal){const l=glow(0,0,0,1.4,0xffcf6e);glows.splice(glows.indexOf(l),1);world.remove(l);l.position.set(0,1.7,-.75);l.material.opacity=.6;G.add(l)}
+    world.add(G);lodAdd(G);return{G,h,wheels}};
+  for(let k=0;k<(mob?5:11);k++){const cargo=k%2===1,royal=k%5===0,v=vehicle(k,royal,cargo),city=cities[(k+2)%5];v.G.scale.setScalar(1.25);v.G.position.copy(startAt(city));
+    travel(v.G,cargo?4.2+r():5.5+r()*1.5,(t,dt,mv)=>{gallop(v.h,t,mv*.8,k);v.wheels.forEach(w=>w.rotation.x-=mv*dt/.42)},city)}
+}
+
 /* ---------- particelle stagionali ---------- */
 let partSys=null;
 function particles(kind){
@@ -1828,7 +1952,7 @@ function build(){
   const zEdge=buildIsland(se);
   waterfall(new THREE.Vector3(RIVER_X,-.32,zEdge-.2),new THREE.Vector3(0,0,1),4.8,{v0:3,len:480});
   for(const[th,y,w]of[[.62,-50,4],[1.25,-88,3.4],[5.6,-40,3.6],[3.9,-70,3.2],[2.1,-60,3]]){const rr=rockRadiusAt(th,y)-.4;const d=new THREE.Vector3(Math.cos(th),0,Math.sin(th));waterfall(new THREE.Vector3(d.x*rr,y,d.z*rr),d,w,{v0:6,up:2,len:380})}
-  RES.length=0;RSEG.length=0;buildVillages();sky();coinsInit();people();zeppelins(isMobile()?2:3);wingedShip();stravaganze();forest();particles(se.part);
+  RES.length=0;RSEG.length=0;ZONES=false;buildVillages();sky();coinsInit();people();zeppelins(isMobile()?2:3);wingedShip();stravaganze();capitale();traffico();forest();particles(se.part);
   applyLight(true);applySky();renderLabels();
   if(!cam0){cam0=true;const d=fitDist();controls.target.set(0,-80,0);camera.position.set(d*.62,d*.5,d*.62)}
 }
@@ -1844,7 +1968,7 @@ function updateLight(dt){
   scene.background=k>.5?nightSky:daySky;
   sun.intensity=lerp(2.1,.12,k);sun.color.set(k>.5?0x8fa8ff:se.sun);hemi.intensity=lerp(.8,.14,k);hemi.color.set(k>.5?0x5a6cb0:0xdfefff);rim.intensity=lerp(.45,.25,k);
   renderer.toneMappingExposure=lerp(1.1,1.2,k);
-  glows.forEach(g=>g.material.opacity=k*.9);fallMats.forEach(m=>m.uniforms.night.value=k*.8);
+  glows.forEach(g=>{g.material.opacity=k*.9;g.visible=k>.02});fallMats.forEach(m=>m.uniforms.night.value=k*.8);
   if(CLOUDMAT)CLOUDMAT.emissiveIntensity=lerp(.25,.04,k);
 }
 
@@ -1941,7 +2065,7 @@ function renderPanel(a){
   panel.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>select(b.dataset.go)));
 }
 function select(id){const a=byId[id];if(!a.anchor)return;sel=id;renderPanel(a);panel.hidden=false;panel.scrollTop=0;renderDock();renderLabels();applyView();
-  const[cx,cz]=tw(a.gx,a.gy);flyTo(new THREE.Vector3(cx,1,cz),(a.castello?95:120)*(isMobile()?1.45:1))}
+  const[cx,cz]=tw(a.gx,a.gy);flyTo(new THREE.Vector3(cx,1,cz),(a.castello?95:70)*(isMobile()?1.45:1))}
 function close(){sel=null;panel.hidden=true;renderDock();renderLabels();applyView()}
 addEventListener('keydown',e=>{if(e.key!=='Escape')return;const ev=document.getElementById('eventi'),gd=document.getElementById('guida');if(!ev.hidden||!gd.hidden){ev.hidden=true;gd.hidden=true}else if(sel)close()});
 anim.push(()=>{});
