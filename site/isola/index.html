@@ -4,9 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="description" content="Il regno di Jarvis in isometrico: ogni edificio è un agente. Demo con dati di prova.">
-<meta property="og:title" content="Isola di Sire">
-<meta property="og:description" content="Il regno di Jarvis in isometrico: ogni edificio è un agente. Demo con dati di prova.">
 <title>Isola di Sire</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,7 +39,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 /* top */
 #top{top:0;left:0;right:0;padding:calc(env(safe-area-inset-top,0px) + 8px) max(10px,env(safe-area-inset-right,0px)) 0 max(10px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:6px}
 .bar-top{display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,var(--wood-3),var(--wood));border:2px solid var(--gold-dim);border-radius:12px;padding:6px 10px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
-.crest{position:relative;flex:none;width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#8f3b24,#3a120b);border:2px solid var(--gold);display:grid;place-items:center;font:700 21px var(--font-display);color:var(--gold)}
+.crest{position:relative;flex:none;padding:0;cursor:pointer;width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#8f3b24,#3a120b);border:2px solid var(--gold);display:grid;place-items:center;font:700 21px var(--font-display);color:var(--gold)}
 .crest .lv{position:absolute;right:-7px;top:-7px;width:21px;height:23px;background:var(--wood-2);border:1.5px solid var(--gold);clip-path:polygon(50% 100%,0 75%,0 0,100% 0,100% 75%);font:800 11px/21px var(--font-ui);color:var(--ink);text-align:center}
 .realm{flex:1;min-width:0;text-align:center;line-height:1.05}
 .realm small{display:block;font:700 11px var(--font-ui);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-dim)}
@@ -118,7 +115,28 @@ button{font:inherit;color:inherit;cursor:pointer}
 .legend{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-size:14px;color:var(--ink-dim)}
 code{font-size:12px;color:#ffd98a}
 .err{position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center;background:#1d0f0a;z-index:30;font-size:16px}
-@media (prefers-reduced-motion:reduce){.chip.flash,#ticker .new{animation:none}#compass svg,.goal i{transition:none}}
+/* avvisi e pergamene */
+#toast{position:fixed;z-index:12;left:50%;top:calc(env(safe-area-inset-top,0px) + 112px);transform:translateX(-50%);width:max-content;max-width:min(92vw,520px);background:rgba(25,14,8,.94);border:1.5px solid var(--gold);border-radius:12px;padding:10px 14px;font:700 14.5px/1.4 var(--font-ui);text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+#toast.show{animation:tin .35s ease}
+@keyframes tin{from{opacity:0;transform:translate(-50%,-8px)}}
+#overlay{position:fixed;inset:0;z-index:15;display:grid;place-items:center;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));background:rgba(10,6,3,.55)}
+.pergamena{width:min(420px,100%);display:grid;grid-template-rows:auto 1fr auto}
+.rotolo{height:26px;border-radius:13px;background:linear-gradient(#a7835a,#e7cfa3 45%,#8b6a44);box-shadow:0 4px 10px rgba(0,0,0,.4)}
+.carta{background:linear-gradient(90deg,#e9d6ad,#f6ead0 20%,#f6ead0 80%,#e2cc9f);color:#3b2614;margin:-6px 10px;padding:0 22px;max-height:0;overflow:hidden;transition:max-height .7s ease,padding .7s ease;text-align:center;font-family:Georgia,serif}
+.aperto .carta{max-height:640px;padding:22px}
+.carta .intest{font:700 21px var(--font-display);letter-spacing:.06em;margin:0 0 10px;color:#7a1f1f}
+.carta .testo{font-size:17px;margin:0 0 8px}
+.carta .nota,.carta .da{font-size:14px;opacity:.8;margin:0 0 8px}
+.carta img{display:block;width:100%;border:6px solid #3b2614;border-radius:4px;margin:0 0 8px}
+.sigillo{width:78px;height:78px;border-radius:50%;border:0;margin:10px auto 4px;display:grid;place-items:center;font:700 28px var(--font-display);color:#f3c6c0;background:radial-gradient(circle at 35% 30%,#d6453c,#8e1b16 70%);box-shadow:0 3px 0 #5e0f0c,0 6px 12px rgba(0,0,0,.35);cursor:pointer}
+.sigillo.timbrato{animation:timbro .5s ease forwards}
+@keyframes timbro{40%{transform:scale(1.25)}100%{transform:scale(.9);filter:saturate(.7)}}
+.sigillo.piccolo{width:48px;height:48px;font-size:19px;margin:0;flex:none}
+.annulla{background:none;border:0;color:#7a5a3a;text-decoration:underline;cursor:pointer;font:500 14px var(--font-ui);min-height:40px}
+.carta-form{display:flex;gap:8px;align-items:center;justify-content:center;margin:6px 0 10px}
+.carta-form input{flex:1;min-width:0;font:500 15px var(--font-ui);padding:9px 10px;border:1.5px solid #a07636;border-radius:8px;background:#fffaf0;color:#3b2614}
+.carta a.dl{display:inline-block;color:#7a1f1f;font:700 14px var(--font-ui);margin:0 0 8px}
+@media (prefers-reduced-motion:reduce){.chip.flash,#ticker .new,#toast.show,.sigillo.timbrato{animation:none}.carta{transition:none}#compass svg,.goal i{transition:none}}
 @media (min-width:760px){#bottom{left:auto;width:440px}#mission{max-width:100%}}
 </style>
 </head>
@@ -126,10 +144,12 @@ code{font-size:12px;color:#ffd98a}
 <div id="veil" role="status"><b>Preparo il regno</b><div class="bar"><i id="veil-bar"></i></div><small id="veil-t">Carico le tessere…</small></div>
 <canvas id="world" tabindex="0" aria-label="Mappa isometrica del Regno di Sire. Usa Q ed E per ruotare, le frecce per spostarti, + e − per lo zoom."></canvas>
 <div id="labels"></div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<div id="overlay" hidden></div>
 
 <div class="hud" id="top">
   <div class="bar-top">
-    <div class="crest" aria-label="Sire, livello 8">S<span class="lv">8</span></div>
+    <button class="crest" id="crest" type="button" aria-label="Il Sire parla: ascolta il riassunto del giorno">S<span class="lv">8</span></button>
     <div class="realm"><small>Tesoro del mese</small><b id="tesoro">€ 21.900</b><span class="goal" title="Obiettivo del mese"><i id="goal" style="width:87%"></i></span></div>
     <div class="rules"><small>Regole</small><b id="regole">48</b></div>
   </div>
@@ -156,7 +176,7 @@ code{font-size:12px;color:#ffd98a}
   <nav id="nav" aria-label="Menu del regno">
     <button id="n-list" aria-pressed="false"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M5 6h16M5 13h16M5 20h16" stroke="#e8b85c" stroke-width="2.6" stroke-linecap="round"/></svg>Elenco</button>
     <button id="n-ev" aria-pressed="false"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M13 3l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill="#e8b85c" stroke="#6b4a18"/></svg>Eventi</button>
-    <button id="n-q" aria-pressed="false"><svg viewBox="0 0 26 26" aria-hidden="true"><rect x="3" y="14" width="4" height="9" fill="#e8b85c"/><rect x="11" y="9" width="4" height="14" fill="#e8b85c"/><rect x="19" y="4" width="4" height="19" fill="#e8b85c" id="q-bar"/></svg><span id="q-lbl">Alta</span></button>
+    <button id="n-snd" aria-pressed="false"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M4 10h5l6-5v16l-6-5H4z" fill="#e8b85c"/><path id="snd-w" d="M18 9a6 6 0 0 1 0 8M20.5 6.5a10 10 0 0 1 0 13" fill="none" stroke="#e8b85c" stroke-width="2" stroke-linecap="round" opacity=".3"/></svg><span id="snd-lbl">Suoni</span></button>
     <button id="n-info" aria-pressed="false"><svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="10" fill="none" stroke="#e8b85c" stroke-width="2"/><path d="M13 11v7M13 7v1" stroke="#e8b85c" stroke-width="2.6" stroke-linecap="round"/></svg>Leggenda</button>
   </nav>
 </div>
