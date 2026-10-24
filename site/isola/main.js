@@ -193,6 +193,9 @@ function paintGround(mat, u) {
           float sAmt=(1.-smoothstep(.5,.78,texture2D(tCoast,ruv).r+(gN(vGW.xz*.9)-.5)*.22))*(1.-dAmt);
           diffuseColor.rgb=mix(gBase,mix(mix(gr,dt,dAmt),sd,sAmt)*.38,gRep); // il terreno piatto è molto illuminato: si abbassa per non bruciare i colori
         }`)
+      .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
+        // terreno opaco: niente riflessi del sole che cambiano colore a seconda della vista
+        roughnessFactor=mix(roughnessFactor,1.,gRep); metalnessFactor=mix(metalnessFactor,0.,gRep);`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
         normal=normalize(mix(normal,normalize((viewMatrix*vec4(0.,1.,0.,0.)).xyz),gRep));`);
   };
