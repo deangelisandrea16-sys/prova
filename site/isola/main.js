@@ -43,7 +43,7 @@ const SKINS = {
   mediterraneo: { nome: 'Mediterraneo', dir: 'assets/sprites/', grass: 'assets/grass.jpg', dirt: 'assets/dirt.jpg', rock: 'assets/roccia.jpg',
     sky: ['#3f86c4', '#7cbde6', '#bfe3f7'], t0: [.62, .66, .4], t1: [.86, .84, .56] },
   // SKIN-AUTO-INIZIO (righe scritte dallo script di integrazione)
-  ...Object.fromEntries(Object.entries(/*SKINDATA*/{"vichinghi": {"nome": "Vichinghi", "sky": ["#2e5378", "#7298bd", "#dbe7f1"], "t0": [0.62, 0.7, 0.7], "t1": [0.8, 0.86, 0.86], "pronta": true}}/*FINE*/)
+  ...Object.fromEntries(Object.entries(/*SKINDATA*/{"vichinghi": {"nome": "Vichinghi", "sky": ["#2e5378", "#7298bd", "#dbe7f1"], "t0": [0.62, 0.7, 0.7], "t1": [0.8, 0.86, 0.86], "pronta": true}, "cyberpunk": {"nome": "Cyberpunk", "sky": ["#120b2e", "#3b1f72", "#d9508f"], "t0": [0.9, 0.9, 0.95], "t1": [1.05, 1.05, 1.1], "pronta": false}}/*FINE*/)
     .map(([k, v]) => [k, Object.assign({ dir: `assets/skins/${k}/`, grass: `assets/skins/${k}/grass.jpg`, dirt: `assets/skins/${k}/dirt.jpg`, rock: `assets/skins/${k}/rock.jpg` }, v)])),
   // SKIN-AUTO-FINE
 };
@@ -90,7 +90,18 @@ for (let q = -13; q <= 13; q++) for (let r = -13; r <= 13; r++) {
   if (d <= lim) LAND.add(K(q, r));
 }
 const isLand = (q, r) => LAND.has(K(q, r));
-[CANTIERE_HEX, UDIENZE_HEX, POZZO_HEX, FONTANA_HEX, ...ROVINE_HEX, ...CAMPI_HEX, ...Object.values(CONTORNO), ...ORDER.map(k => AG[k].hex)].forEach(h => LAND.add(K(...h)));
+/* ---- mappa modificata con l'editor (salvata su questo dispositivo) ---- */
+const MAPPA_KEY = 'regno-mappa-v1';
+let MAPPA = null;
+try { MAPPA = JSON.parse(localStorage.getItem(MAPPA_KEY) || 'null'); if (!MAPPA || MAPPA.v !== 1 || !Array.isArray(MAPPA.land) || MAPPA.land.length < 7) MAPPA = null; } catch (e) { MAPPA = null; }
+const setHex = (dst, src) => { if (Array.isArray(src)) { dst[0] = +src[0]; dst[1] = +src[1]; } };
+if (MAPPA) {
+  LAND.clear(); MAPPA.land.forEach(k => LAND.add(String(k)));
+  ORDER.forEach(k => { const v = MAPPA.agenti && MAPPA.agenti[k]; if (v) { AG[k].hex = [+v[0], +v[1]]; AG[k].rot = +v[2] || 0; } });
+  const sp = MAPPA.spec || {}; setHex(CANTIERE_HEX, sp.cantiere); setHex(UDIENZE_HEX, sp.udienze); setHex(POZZO_HEX, sp.pozzo);
+  (MAPPA.rovine || []).forEach((h, i) => { if (ROVINE_HEX[i]) setHex(ROVINE_HEX[i], h); });
+}
+if (!MAPPA) [CANTIERE_HEX, UDIENZE_HEX, POZZO_HEX, FONTANA_HEX, ...ROVINE_HEX, ...CAMPI_HEX, ...Object.values(CONTORNO), ...ORDER.map(k => AG[k].hex)].forEach(h => LAND.add(K(...h)));
 
 const ROADS = { A: [0, 3], B: [5, 3], C: [4, 3], D: [5, 3, 1], E: [0, 5, 3], F: [0, 3, 1], G: [4, 3, 2], H: [0, 4, 3, 2], I: [5, 4, 2, 1], J: [0, 3, 2, 1], K: [5, 4, 3, 2, 1], L: [0, 1, 2, 3, 4, 5], M: [3] };
 const COAST = { A: [1], B: [1, 2], C: [0, 1, 2], D: [5, 0, 1, 2] };
@@ -114,10 +125,18 @@ const OCC = new Map();
 const occ = (h, w) => OCC.set(K(...h), w);
 for (let d = 0; d < 6; d++) { const [dq, dr] = DIRS[d]; for (let i = 0; i < 4; i++) link([i * dq, i * dr], [(i + 1) * dq, (i + 1) * dr]); }
 link([4, 0], [5, -1]); link([-4, 0], [-5, 1]); link([0, 4], [1, 3]); link([-4, 4], [-4, 5]);
-ORDER.forEach(k => occ(AG[k].hex, k));
-occ(CANTIERE_HEX, 'cantiere'); occ(UDIENZE_HEX, 'udienze'); occ(POZZO_HEX, 'pozzo'); occ(FONTANA_HEX, 'fontana');
-ROVINE_HEX.forEach(h => occ(h, 'rovina')); CAMPI_HEX.forEach(h => occ(h, 'campo'));
-Object.entries(CONTORNO).forEach(([m, h]) => { if (!OCC.has(K(...h))) occ(h, m); });
+// strade: insieme di tessere; i collegamenti nascono tra tessere vicine
+const ROADT = new Set(MAPPA && Array.isArray(MAPPA.strade) ? MAPPA.strade.map(String) : ROADSET.keys());
+function rebuildRoads() { ROADSET.clear(); LINKS.length = 0;
+  ROADT.forEach(k => { const [q, r] = k.split(',').map(Number); for (let d = 0; d < 3; d++) { const n = [q + DIRS[d][0], r + DIRS[d][1]]; if (ROADT.has(K(...n))) link([q, r], n); } }); }
+rebuildRoads();
+// tessere occupate da agenti e luoghi speciali (gli elementi liberi stanno in DECO)
+function rebuildOcc(gen) { OCC.clear();
+  ORDER.forEach(k => occ(AG[k].hex, k));
+  occ(CANTIERE_HEX, 'cantiere'); occ(UDIENZE_HEX, 'udienze'); occ(POZZO_HEX, 'pozzo');
+  ROVINE_HEX.forEach(h => occ(h, 'rovina'));
+  if (gen) { occ(FONTANA_HEX, 'fontana'); CAMPI_HEX.forEach(h => occ(h, 'campo')); Object.entries(CONTORNO).forEach(([m, h]) => { if (!OCC.has(K(...h))) occ(h, m); }); } }
+rebuildOcc(!MAPPA);
 const isRoadTile = (key) => ROADSET.has(key) && !OCC.has(key);
 const dirOf = (h) => DIRS.findIndex(([dq, dr]) => dq * 4 === h[0] && dr * 4 === h[1]);
 
@@ -309,12 +328,12 @@ function setSpriteImg(o, name) {
   o.userData.img = name;
   const info = SPR_INFO[name] || { w: 640, h: 640 }; const W = o.userData.width;
   o.material.map = sprTex(name); o.material.needsUpdate = true;
-  o.scale.set(W, W * info.h / info.w, 1); o.center.set(.5, Math.min(.45, o.userData.cy * info.w / info.h));
+  o.scale.set(o.userData.flip ? -W : W, W * info.h / info.w, 1); o.center.set(.5, Math.min(.45, o.userData.cy * info.w / info.h));
 }
 // base: nome con le viste (es. 'castello') oppure immagine singola (es. 'casa_a'); facing: direzione dell'ingresso nel mondo
 function makeSprite(base, width, pos, facing, opt) {
   opt = opt || {}; const o = new THREE.Sprite(spriteMat(opt.edge));
-  o.userData.width = width; o.userData.cy = opt.cy || .3; o.userData.views = SPR_INFO[base + '_N'] ? VIEW_SFX.map(v => base + '_' + v) : null;
+  o.userData.flip = !!opt.flip; o.userData.width = width; o.userData.cy = opt.cy || .3; o.userData.views = SPR_INFO[base + '_N'] ? VIEW_SFX.map(v => base + '_' + v) : null;
   o.userData.single = base; o.userData.facing = (facing || new THREE.Vector3(0, 0, 1)).clone().normalize();
   o.userData.set = (k, v) => { o.material.userData.u[k].value = v; };
   o.userData.mats = [o.material];
@@ -437,7 +456,7 @@ function buildUnderside(tRock) {
         diffuseColor.rgb=c;`);
   };
   m.customProgramCacheKey = () => 'roccia';
-  const mesh = new THREE.Mesh(g, m); mesh.receiveShadow = true; scene.add(mesh);
+  const mesh = new THREE.Mesh(g, m); mesh.receiveShadow = true; scene.add(mesh); GND.under = mesh;
   return maxD;
 }
 // nuvole soffici sotto e intorno all'isola
@@ -529,89 +548,107 @@ function buildBirds() {
 /* ================= costruzione del mondo ================= */
 const D = {}; let fan = null, wheel = null; const flags = [], clouds = [];
 const LBL = {}; const PICK = [];
-function hitbox(key, p, h) { const m = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, h, 6), new THREE.MeshBasicMaterial({ visible: false })); m.position.set(p.x, h / 2, p.z); m.userData.key = key; scene.add(m); PICK.push(m); }
-function buildWorld(groundU) {
-  // tessere
+function hitbox(key, p, h) { const m = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, h, 6), new THREE.MeshBasicMaterial({ visible: false })); m.position.set(p.x, h / 2, p.z); m.userData.key = key; scene.add(m); PICK.push(m); return m; }
+/* terreno: tessere unite in un'unica mesh, ricostruibile dall'editor */
+const GND = { mesh: null, U: null, under: null, rock: null, sig: '' };
+function groundTiles() {
+  STATIC.length = 0;
   LAND.forEach(k => {
     const [q, r] = k.split(',').map(Number); const p = W(q, r);
-    const water = []; for (let d = 0; d < 6; d++) if (!isLand(q + DIRS[d][0], r + DIRS[d][1])) water.push(d);
-    if (isRoadTile(k)) { const m = matchSet(ROADS, [...ROADSET.get(k)]); if (m) { addStatic('hex_road_' + m.name, p, m.rot); return; } }
-    addStatic('hex_grass', p, 0);
+    addStatic('hex_grass', p, 0); // le strade sono dipinte dalla maschera (tRoad): niente tessere-strada del kit
   });
-  // natura e borgo
-  const smokeSrc = [], HOUSES = [];
+  // piazza del castello: merci ai lati delle strade
+  const rp = rng(31);
+  if (LAND.has(K(0, 0)) && OCC.get(K(0, 0)) === 'sire') for (let d = 0; d < 6; d++) { if (!LAND.has(K(...DIRS[d]))) continue; const v = W(...DIRS[d]).multiplyScalar(.5), side = new THREE.Vector3(-v.z, 0, v.x).normalize().multiplyScalar(.62);
+    addStatic(['barrel', 'crate_A_big', 'sack', 'wheelbarrow', 'crate_long_A', 'resource_lumber'][Math.floor(rp() * 6)], W(...DIRS[d]).multiplyScalar(1.5).add(side), rp() * 6); }
+}
+const groundSig = () => [...LAND].sort().join(';') + '|' + [...ROADT].sort().join(';') + '|' + [...OCC.keys()].sort().join(';');
+function rebuildGround(force) {
+  const sig = groundSig(); if (!force && sig === GND.sig) return; GND.sig = sig;
+  if (GND.mesh) { scene.remove(GND.mesh); GND.mesh.geometry.dispose(); GND.mesh.material.dispose(); }
+  ['tRoad', 'tCoast'].forEach(t => { if (GND.U[t].value) GND.U[t].value.dispose(); });
+  GND.U.tRoad.value = roadTexture(); GND.U.tCoast.value = coastTexture();
+  groundTiles(); GND.mesh = bakeStatic(GND.U);
+  if (GND.under) { scene.remove(GND.under); GND.under.geometry.dispose(); GND.under.material.dispose(); }
+  buildUnderside(GND.rock);
+}
+/* elementi liberi (case, natura, campi): { n, w, q, r, rot } */
+const DECO = [];
+const CASE = new Set(['casa_a', 'casa_b', 'fattoria']);
+function genDeco() {
+  const add = (n, w, q, r) => DECO.push({ n, w: w || 2.15, q, r, rot: 0 });
   LAND.forEach(k => {
     if (OCC.has(k) || ROADSET.has(k)) return;
     const [q, r] = k.split(',').map(Number); const dist = hdist(q, r); const p = W(q, r);
     const coastal = DIRS.some(([dq, dr]) => !isLand(q + dq, r + dr));
     const ang = Math.atan2(p.z, p.x) * 180 / Math.PI;
-    const rot = Math.floor(R() * 6) * Math.PI / 3;
-    const NAT = !!SPR_INFO.pineta; // natura dipinta disponibile
-    const nat = (n, w, kay) => { if (NAT && SPR_INFO[n]) HOUSES.push([p, n, w]); else if (kay) addStatic(kay, p, rot); };
-    // costa: spiaggia quasi libera, pochi scogli
-    if (coastal) { const rr = R(); if (rr < .07) nat('scogli', 1.7, pick(['rock_single_A', 'rock_single_B', 'rock_single_C']));
-      else if (rr < .2) nat(pick(['cipressi', 'pineta']), 2.0, pick(['trees_A_small', 'trees_B_small'])); return; }
-    // montagne solo nel cuore del nord, raggruppate
-    if (dist >= 7 && ang < -55 && ang > -130) { const rr = R(); if (rr < .55) nat(rr < .4 ? 'montagna' : 'rupe', rr < .4 ? 2.9 : 2.5, pick(['mountain_A_grass_trees', 'mountain_B_grass_trees', 'hills_A_trees'])); else if (rr < .8) nat('pineta', 2.3, 'trees_A_large'); return; }
-    if (dist >= 6) { const rr = R(); if (rr < .36) nat(pick(['pineta', 'cipressi', 'uliveto', 'uliveto']), 2.3, pick(['trees_A_large', 'trees_B_large', 'trees_A_medium']));
-      else if (rr < .46) { HOUSES.push([p, NAT ? 'fattoria' : 'casa_a', 2.3]); smokeSrc.push(p.clone().add(new THREE.Vector3(.1, 1.4, -.1))); }
-      else if (rr < .56 && SPR_INFO.grano) nat(pick(['grano', 'vigneto']), 2.3); return; }
+    if (coastal) { const rr = R(); if (rr < .07) add('scogli', 1.7, q, r); else if (rr < .2) add(pick(['cipressi', 'pineta']), 2.0, q, r); return; }
+    if (dist >= 7 && ang < -55 && ang > -130) { const rr = R(); if (rr < .55) add(rr < .4 ? 'montagna' : 'rupe', rr < .4 ? 2.9 : 2.5, q, r); else if (rr < .8) add('pineta', 2.3, q, r); return; }
+    if (dist >= 6) { const rr = R(); if (rr < .36) add(pick(['pineta', 'cipressi', 'uliveto', 'uliveto']), 2.3, q, r);
+      else if (rr < .46) add('fattoria', 2.3, q, r); else if (rr < .56) add(pick(['grano', 'vigneto']), 2.3, q, r); return; }
     const rr = R();
-    if (dist <= 4 && rr < .42) { HOUSES.push([p, pick(['casa_a', 'casa_b'])]); smokeSrc.push(p.clone().add(new THREE.Vector3(.1, 1.5, -.1))); return; }
-    if (rr < .2 && dist > 4) { HOUSES.push([p, NAT ? 'fattoria' : 'casa_a', 2.3]); smokeSrc.push(p.clone().add(new THREE.Vector3(.1, 1.4, -.1))); }
-    else if (rr < .55) nat(pick(['uliveto', 'vigneto', 'cipressi']), 2.2, pick(['trees_A_small', 'trees_B_small', 'tree_single_A', 'trees_A_medium']));
+    if (dist <= 4 && rr < .42) { add(pick(['casa_a', 'casa_b']), 2.15, q, r); return; }
+    if (rr < .2 && dist > 4) add('fattoria', 2.3, q, r);
+    else if (rr < .55) add(pick(['uliveto', 'vigneto', 'cipressi']), 2.2, q, r);
   });
-  // campi coltivati con staccionate
-  CAMPI_HEX.forEach((h, i) => { const p = hexPos(h);
-    if (SPR_INFO.grano) { HOUSES.push([p, i % 3 === 2 ? 'vigneto' : 'grano', 2.3]); return; }
-    addStatic('building_grain', p, i * Math.PI / 3);
-    [0, 2, 4].forEach(e => { const a = Math.PI / 6 + e * Math.PI / 3, rp = p.clone().add(new THREE.Vector3(Math.cos(a) * .86, 0, Math.sin(a) * .86)); addStatic('fence_wood_straight', rp, -a + Math.PI / 2, .9); }); });
-  if (SPR_INFO.fontana) HOUSES.push([hexPos(FONTANA_HEX), 'fontana', 1.9]);
-  // edifici di contorno
-  Object.entries(CONTORNO).forEach(([n, h]) => { if (OCC.get(K(...h)) !== n) return; const p = hexPos(h); HOUSES.push([p, n.length % 2 ? 'casa_a' : 'casa_b']);
-    smokeSrc.push(p.clone().add(new THREE.Vector3(.1, 1.5, -.1))); });
-  // piazza del castello: merci ai lati delle strade
-  for (let d = 0; d < 6; d++) { const v = W(...DIRS[d]).multiplyScalar(.5), side = new THREE.Vector3(-v.z, 0, v.x).normalize().multiplyScalar(.62);
-    addStatic(pick(['barrel', 'crate_A_big', 'sack', 'wheelbarrow', 'crate_long_A', 'resource_lumber']), W(...DIRS[d]).multiplyScalar(1.5).add(side), R() * 6); }
-  // ninfee
-
-  bakeStatic(groundU);
-  HOUSES.forEach(([p, n, w]) => makeSprite(n, w || 2.15, p));
-  buildSmoke(smokeSrc);
+  CAMPI_HEX.forEach((h, i) => add(i % 3 === 2 ? 'vigneto' : 'grano', 2.3, h[0], h[1]));
+  add('fontana', 1.9, FONTANA_HEX[0], FONTANA_HEX[1]);
+  Object.entries(CONTORNO).forEach(([n, h]) => { if (OCC.get(K(...h)) === n) add(n.length % 2 ? 'casa_a' : 'casa_b', 2.15, h[0], h[1]); });
+}
+const rotFacing = (base, rot) => base.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -(rot || 0) * Math.PI / 2);
+function removeSprite(o) { if (!o) return; scene.remove(o); if (o.userData.ghost) scene.remove(o.userData.ghost); const i = SPRITES.indexOf(o); if (i >= 0) SPRITES.splice(i, 1); o.material.dispose(); }
+function spawnDeco() {
+  DECO.forEach((d, i) => { removeSprite(d.o); const single = !SPR_INFO[d.n + '_N'];
+    const o = makeSprite(d.n, d.w || 2.15, W(d.q, d.r), rotFacing(new THREE.Vector3(0, 0, 1), d.rot), { flip: single && d.rot % 2 === 1 });
+    o.userData.ent = 'dc:' + i; d.o = o; });
+}
+function rebuildSmoke() {
+  if (SMOKE) { scene.remove(SMOKE); SMOKE.geometry.dispose(); SMOKE.material.dispose(); SMOKE = null; }
+  buildSmoke(DECO.filter(d => CASE.has(d.n)).map(d => W(d.q, d.r).add(new THREE.Vector3(.1, d.n === 'fattoria' ? 1.4 : 1.5, -.1))));
+}
+function buildWorld(groundU) {
+  GND.U = groundU;
+  if (MAPPA && Array.isArray(MAPPA.deco)) MAPPA.deco.forEach(d => { if (d && typeof d.n === 'string' && SPR_INFO[d.n]) DECO.push({ n: d.n, w: +d.w || 2.15, q: +d.q, r: +d.r, rot: +d.rot || 0 }); });
+  else genDeco();
+  rebuildOcc(false); // da qui in poi campi, fontana e case di contorno sono elementi liberi
+  GND.sig = groundSig(); groundTiles(); GND.mesh = bakeStatic(groundU);
+  spawnDeco();
+  rebuildSmoke();
   buildBirds();
 
   // quartieri degli agenti
   ORDER.forEach(k => {
     const a = AG[k]; const p = hexPos(a.hex);
-    const o = makeSprite(SPR_OF[k], k === 'sire' ? 4.3 : 2.75, p, k === 'sire' ? new THREE.Vector3(0, 0, 1) : p.clone().negate());
-    o.userData.key = k; PICK.push(o); a.obj = o; a.pos = p; a.top = 2.2;
+    const o = makeSprite(SPR_OF[k], k === 'sire' ? 4.3 : 2.75, p);
+    o.userData.key = k; o.userData.ent = 'ag:' + k; PICK.push(o); a.obj = o; a.pos = p; a.top = 2.2;
     a.ring = statusRing(p);
   });
   fan = null; // le pale sono dipinte
-  D.flagOut = model('flag_red'); scene.add(D.flagOut); D.flagFat = model('flag_red'); scene.add(D.flagFat);
-  placeFlag(D.flagOut, AG.outreach); placeFlag(D.flagFat, AG.fatture);
+  D.flagOut = model('flag_red'); scene.add(D.flagOut); D.flagFat = model('flag_red'); scene.add(D.flagFat); flags.push(D.flagOut, D.flagFat);
   D.corr = corruption(AG.outreach.pos);
-  [0, 2, 4].forEach(d => { const f = model('flag_blue'); f.position.copy(W(...DIRS[d]).multiplyScalar(.62)); f.scale.setScalar(1.15); scene.add(f); flags.push(f); });
+  D.sireFlags = [0, 2, 4].map(d => { const f = model('flag_blue'); f.userData.off = W(...DIRS[d]).multiplyScalar(.62); f.scale.setScalar(1.15); scene.add(f); flags.push(f); return f; });
 
   // udienze: tende davanti al castello
   D.tents = [];
-  const up = hexPos(UDIENZE_HEX); [[-.5, -.4], [.55, -.25], [0, .45]].forEach(([x, z], i) => { const t = makeSprite('tenda', 1.15, new THREE.Vector3(up.x + x, 0, up.z + z)); t.visible = i < S.udienze; t.userData.key = 'udienze'; PICK.push(t); D.tents.push(t); });
-  addLabelObj('udienze', 'Approvazioni', up, 1.2, null, 'small'); hitbox('udienze', up, 1.2);
+  [[-.5, -.4], [.55, -.25], [0, .45]].forEach(([x, z], i) => { const t = makeSprite('tenda', 1.15, new THREE.Vector3()); t.userData.off = new THREE.Vector3(x, 0, z); t.visible = i < S.udienze; t.userData.key = 'udienze'; t.userData.ent = 'sp:udienze'; PICK.push(t); D.tents.push(t); });
+  addLabelObj('udienze', 'Approvazioni', hexPos(UDIENZE_HEX), 1.2, null, 'small'); D.hitUdi = hitbox('udienze', hexPos(UDIENZE_HEX), 1.2);
 
   // pozzo dei desideri
-  const pp = hexPos(POZZO_HEX); const pz = makeSprite('pozzo', 1.8, pp); pz.userData.key = 'pozzo'; PICK.push(pz); addLabelObj('pozzo', 'Pozzo dei desideri', pp, 1.3, null, 'small');
+  D.pozzo = makeSprite('pozzo', 1.8, hexPos(POZZO_HEX)); D.pozzo.userData.key = 'pozzo'; D.pozzo.userData.ent = 'sp:pozzo'; PICK.push(D.pozzo); addLabelObj('pozzo', 'Pozzo dei desideri', hexPos(POZZO_HEX), 1.3, null, 'small');
 
   // cantiere dell'impossibile
-  const cp = hexPos(CANTIERE_HEX); D.stages = {};
-  ['cantiere_1', 'cantiere_2', 'cantiere_3', 'torre'].forEach(n => { const o = makeSprite(n, 2.5, cp, cp.clone().negate()); o.visible = false; o.userData.key = 'cantiere'; PICK.push(o); D.stages[n] = o; });
+  D.stages = {};
+  ['cantiere_1', 'cantiere_2', 'cantiere_3', 'torre'].forEach(n => { const o = makeSprite(n, 2.5, hexPos(CANTIERE_HEX)); o.visible = false; o.userData.key = 'cantiere'; o.userData.ent = 'sp:cantiere'; PICK.push(o); D.stages[n] = o; });
   D.scaff = new THREE.Object3D();
   D.stageNow = stageFor(S.imp.n); D.stages[D.stageNow].visible = true;
-  addLabelObj('cantiere', 'Cantiere', cp, 2.0, 3); hitbox('cantiere', cp, 2);
+  addLabelObj('cantiere', 'Cantiere', hexPos(CANTIERE_HEX), 2.0, 3); D.hitCant = hitbox('cantiere', hexPos(CANTIERE_HEX), 2);
+  D.rotCant = (MAPPA && MAPPA.spec && +MAPPA.spec.rotCant) || 0;
 
   // rovine = idee da costruire
-  D.lots = ROVINE_HEX.map((h, i) => { const p = hexPos(h); const ru = makeSprite('rovina', 2.1, p, null, { edge: 0xff8a3a }); ru.userData.key = 'rovine'; PICK.push(ru);
-    const ho = makeSprite(i % 2 ? 'casa_a' : 'casa_b', 2.15, p); ho.visible = false; ho.userData.key = 'rovine'; PICK.push(ho); return { ru, ho, done: false }; });
+  D.lots = ROVINE_HEX.map((h, i) => { const ru = makeSprite('rovina', 2.1, hexPos(h), null, { edge: 0xff8a3a }); ru.userData.key = 'rovine'; ru.userData.ent = 'rv:' + i; PICK.push(ru);
+    const ho = makeSprite(i % 2 ? 'casa_a' : 'casa_b', 2.15, hexPos(h)); ho.visible = false; ho.userData.key = 'rovine'; ho.userData.ent = 'rv:' + i; PICK.push(ho); return { ru, ho, done: false }; });
   addLabelObj('rovine', 'Idee da costruire', hexPos(ROVINE_HEX[2]), 1.1, null, 'small');
+  placeAll();
 
   // mulino ad acqua sulla costa
   let wmHex = null; LAND.forEach(k => { if (wmHex) return; const [q, r] = k.split(',').map(Number); if (OCC.has(k) || ROADSET.has(k)) return; if (hdist(q, r) >= 5 && q < -2 && r > 2) wmHex = [q, r]; });
@@ -623,7 +660,25 @@ function buildWorld(groundU) {
 
   ORDER.forEach(k => addLabelAgent(k));
 }
-function placeFlag(f, a) { f.position.copy(a.pos).add(new THREE.Vector3(.72, 0, .5)); f.scale.setScalar(1.1); flags.push(f); }
+function placeFlag(f, a) { f.position.copy(a.pos).add(new THREE.Vector3(.72, 0, .5)); f.scale.setScalar(1.1); }
+// mette agenti e luoghi speciali sulle loro tessere (all'avvio e dopo le modifiche dell'editor)
+function placeAll() {
+  ORDER.forEach(k => { const a = AG[k], p = hexPos(a.hex); a.pos = p;
+    const base = k === 'sire' || p.lengthSq() < .01 ? new THREE.Vector3(0, 0, 1) : p.clone().negate().normalize();
+    a.obj.position.set(p.x, .02, p.z); a.obj.userData.facing = rotFacing(base, a.rot); a.ring.position.set(p.x, a.ring.position.y, p.z); });
+  placeFlag(D.flagOut, AG.outreach); placeFlag(D.flagFat, AG.fatture);
+  D.corr.position.set(AG.outreach.pos.x, D.corr.position.y, AG.outreach.pos.z); D.corr.material.uniforms.uC.value.set(AG.outreach.pos.x, AG.outreach.pos.z);
+  D.sireFlags.forEach(f => f.position.copy(AG.sire.pos).add(f.userData.off));
+  const up = hexPos(UDIENZE_HEX); D.tents.forEach(t => t.position.set(up.x + t.userData.off.x, .02, up.z + t.userData.off.z));
+  LBL.udienze.p.set(up.x, LBL.udienze.p.y, up.z); D.hitUdi.position.set(up.x, D.hitUdi.position.y, up.z);
+  const pp = hexPos(POZZO_HEX); D.pozzo.position.set(pp.x, .02, pp.z); LBL.pozzo.p.set(pp.x, LBL.pozzo.p.y, pp.z);
+  const cp = hexPos(CANTIERE_HEX), cb = cp.lengthSq() < .01 ? new THREE.Vector3(0, 0, 1) : cp.clone().negate().normalize();
+  Object.values(D.stages).forEach(o => { o.position.set(cp.x, .02, cp.z); o.userData.facing = rotFacing(cb, D.rotCant); });
+  LBL.cantiere.p.set(cp.x, LBL.cantiere.p.y, cp.z); D.hitCant.position.set(cp.x, D.hitCant.position.y, cp.z);
+  D.lots.forEach((l, i) => { const p = hexPos(ROVINE_HEX[i]); l.ru.position.set(p.x, .02, p.z); l.ho.position.set(p.x, .02, p.z); });
+  const r2 = hexPos(ROVINE_HEX[2]); LBL.rovine.p.set(r2.x, LBL.rovine.p.y, r2.z);
+  updateSprites();
+}
 function stageFor(n) { return n >= S.imp.tot ? 'torre' : n >= 6 ? 'cantiere_3' : n >= 3 ? 'cantiere_2' : 'cantiere_1'; }
 const SPR_OF = { sire: 'castello', jarvis: 'mulino', preventivi: 'mercato', fatture: 'tesoro', contatti: 'taverna', outreach: 'torre', cervello: 'tempio' };
 
@@ -715,13 +770,21 @@ function panPixels(dx, dy) {
   const rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw), fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw);
   cam.tx += -rx * dx * wpp + fx * dy * hpp; cam.tz += -rz * dx * wpp + fz * dy * hpp; clampCam();
 }
-const ptrs = new Map(); let pinch0 = 0, zoom0 = 1, moved = 0;
+const ptrs = new Map(); let pinch0 = 0, zoom0 = 1, moved = 0, edGrab = false, mid0 = null;
+const midOf = () => { const [a, b] = [...ptrs.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; };
 canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved = 0;
-  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); zoom0 = cam.zoom; } });
-canvas.addEventListener('pointermove', e => { const p = ptrs.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x, dy = e.clientY - p.y; moved += Math.abs(dx) + Math.abs(dy);
-  if (ptrs.size === 1) panPixels(dx, dy); p.x = e.clientX; p.y = e.clientY;
-  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch0) cam.zoom = Math.min(ZMAX, Math.max(ZMIN, zoom0 * d / pinch0)); } });
-['pointerup', 'pointercancel'].forEach(t => canvas.addEventListener(t, e => { const was = ptrs.size; ptrs.delete(e.pointerId); pinch0 = 0; if (t === 'pointerup' && was === 1 && moved < 8) pickAt(e.clientX, e.clientY); }));
+  if (ptrs.size === 1 && ED.on) edGrab = edDown(e.clientX, e.clientY);
+  if (ptrs.size === 2) { if (edGrab) { edUp(); edGrab = false; } const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); zoom0 = cam.zoom; mid0 = midOf(); } });
+canvas.addEventListener('pointermove', e => {
+  if (ED.on && !ptrs.size && e.pointerType === 'mouse') { edInitMarks(); const h = ED.tool !== 'sel' && hexAt(e.clientX, e.clientY); showMark(MK.hov, h || null, 0xffffff); }
+  const p = ptrs.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x, dy = e.clientY - p.y; moved += Math.abs(dx) + Math.abs(dy);
+  p.x = e.clientX; p.y = e.clientY;
+  if (ptrs.size === 1) { if (edGrab) edMove(e.clientX, e.clientY); else panPixels(dx, dy); }
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch0) cam.zoom = Math.min(ZMAX, Math.max(ZMIN, zoom0 * d / pinch0));
+    const m = midOf(); if (mid0) panPixels(m.x - mid0.x, m.y - mid0.y); mid0 = m; } });
+['pointerup', 'pointercancel'].forEach(t => canvas.addEventListener(t, e => { const was = ptrs.size; ptrs.delete(e.pointerId); pinch0 = 0; mid0 = null;
+  if (edGrab && was === 1) { edGrab = false; edUp(); return; }
+  if (t === 'pointerup' && was === 1 && moved < 8) { if (ED.on) { if (ED.tool === 'sel') { ED.sel = null; edSelShow(); } } else pickAt(e.clientX, e.clientY); } }));
 canvas.addEventListener('wheel', e => { e.preventDefault(); cam.zoom = Math.min(ZMAX, Math.max(ZMIN, cam.zoom * (1 - e.deltaY * .0012))); }, { passive: false });
 addEventListener('keydown', e => {
   if (e.target.closest && e.target.closest('input,textarea')) return;
@@ -742,7 +805,7 @@ function addLabelAgent(k) { const a = AG[k]; addLabelObj(k, a.nome, a.pos, a.top
 function addLabelObj(key, text, pos, y, lv, cls, withState) {
   const el = document.createElement('button'); el.type = 'button'; el.className = 'lbl ' + (cls || '');
   el.innerHTML = (lv ? `<span class="sh">${lv}</span>` : '') + `<span>${text}</span>` + (withState ? `<span class="dot" id="st-${key}"></span>` : '');
-  el.addEventListener('click', () => openPlace(key)); lblLayer.appendChild(el);
+  el.addEventListener('click', () => { if (!ED.on) openPlace(key); }); lblLayer.appendChild(el);
   LBL[key] = { el, p: new THREE.Vector3(pos.x, y, pos.z) };
 }
 const vt = new THREE.Vector3();
@@ -1006,6 +1069,132 @@ function loop(t) {
   requestAnimationFrame(loop);
 }
 
+/* ================= editor della mappa ================= */
+// Strumenti: seleziona/sposta, terra +, terra −, strada, inserisci. La mappa resta salvata su questo dispositivo.
+const ED = { on: false, tool: 'sel', sel: null, item: 'pineta', undo: [], redo: [], drag: null, stroke: null };
+const CATALOGO = ['casa_a', 'casa_b', 'fattoria', 'pineta', 'cipressi', 'uliveto', 'vigneto', 'grano', 'montagna', 'rupe', 'scogli', 'fontana'];
+const NOMI_ED = { casa_a: 'Casa', casa_b: 'Casa', fattoria: 'Fattoria', pineta: 'Bosco', cipressi: 'Alberi', uliveto: 'Frutteto', vigneto: 'Vigneto', grano: 'Campo', montagna: 'Montagna', rupe: 'Rupe', scogli: 'Massi', fontana: 'Fontana' };
+const NOMI_SP = { cantiere: 'Cantiere', udienze: 'Approvazioni', pozzo: 'Pozzo dei desideri' };
+const MAX_DIST = 18;
+function mapNow() {
+  return { v: 1, land: [...LAND], strade: [...ROADT],
+    agenti: Object.fromEntries(ORDER.map(k => [k, [AG[k].hex[0], AG[k].hex[1], AG[k].rot || 0]])),
+    spec: { cantiere: [...CANTIERE_HEX], udienze: [...UDIENZE_HEX], pozzo: [...POZZO_HEX], rotCant: D.rotCant || 0 },
+    rovine: ROVINE_HEX.map(h => [...h]), deco: DECO.map(d => ({ n: d.n, w: d.w, q: d.q, r: d.r, rot: d.rot || 0 })) };
+}
+function salvaMappa() { try { localStorage.setItem(MAPPA_KEY, JSON.stringify(mapNow())); return true; } catch (e) { return false; } }
+// applica una mappa completa (annulla, ripristina, importa)
+function applyMap(m) {
+  LAND.clear(); m.land.forEach(k => LAND.add(String(k)));
+  ROADT.clear(); m.strade.forEach(k => ROADT.add(String(k))); rebuildRoads();
+  ORDER.forEach(k => { const v = m.agenti[k]; if (v) { AG[k].hex = [+v[0], +v[1]]; AG[k].rot = +v[2] || 0; } });
+  setHex(CANTIERE_HEX, m.spec.cantiere); setHex(UDIENZE_HEX, m.spec.udienze); setHex(POZZO_HEX, m.spec.pozzo); D.rotCant = +m.spec.rotCant || 0;
+  m.rovine.forEach((h, i) => { if (ROVINE_HEX[i]) setHex(ROVINE_HEX[i], h); });
+  DECO.forEach(d => removeSprite(d.o)); DECO.length = 0;
+  m.deco.forEach(d => { if (SPR_INFO[d.n]) DECO.push({ n: d.n, w: +d.w || 2.15, q: +d.q, r: +d.r, rot: +d.rot || 0 }); });
+  refresh(true);
+}
+// dopo ogni modifica: occupazione, terreno (solo se cambiato), posizioni, sprite liberi, fumo, salvataggio
+function refresh(deco) { rebuildOcc(false); rebuildGround(); placeAll(); if (deco) spawnDeco(); rebuildSmoke(); salvaMappa(); edSelShow(); }
+function snapshot() { ED.undo.push(JSON.stringify(mapNow())); if (ED.undo.length > 60) ED.undo.shift(); ED.redo.length = 0; edButtons(); }
+function annulla() { if (!ED.undo.length) return; ED.redo.push(JSON.stringify(mapNow())); applyMap(JSON.parse(ED.undo.pop())); ED.sel = null; edSelShow(); edButtons(); }
+function ripristina() { if (!ED.redo.length) return; ED.undo.push(JSON.stringify(mapNow())); applyMap(JSON.parse(ED.redo.pop())); ED.sel = null; edSelShow(); edButtons(); }
+
+/* ---- tessere ed entità ---- */
+const cubeRound = (q, r) => { const s = -q - r; let rq = Math.round(q), rr = Math.round(r); const rs = Math.round(s); const dq = Math.abs(rq - q), dr = Math.abs(rr - r), ds = Math.abs(rs - s); if (dq > dr && dq > ds) rq = -rr - rs; else if (dr > ds) rr = -rq - rs; return [rq, rr]; };
+function hexAt(x, y) { ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera); const o = ray.ray.origin, d = ray.ray.direction; if (Math.abs(d.y) < 1e-6) return null;
+  const t = -o.y / d.y, px = o.x + d.x * t, pz = o.z + d.z * t, rf = pz / SQ3; return cubeRound((px - rf) / 2, rf); }
+function entHex(id) { const [t, k] = id.split(':');
+  if (t === 'ag') return AG[k].hex; if (t === 'rv') return ROVINE_HEX[+k]; if (t === 'dc') { const d = DECO[+k]; return [d.q, d.r]; }
+  return k === 'cantiere' ? CANTIERE_HEX : k === 'udienze' ? UDIENZE_HEX : POZZO_HEX; }
+function entAtHex(h) { const key = K(...h);
+  for (const k of ORDER) if (K(...AG[k].hex) === key) return 'ag:' + k;
+  for (const k of ['cantiere', 'udienze', 'pozzo']) if (K(...entHex('sp:' + k)) === key) return 'sp:' + k;
+  for (let i = 0; i < ROVINE_HEX.length; i++) if (K(...ROVINE_HEX[i]) === key) return 'rv:' + i;
+  for (let i = 0; i < DECO.length; i++) if (K(DECO[i].q, DECO[i].r) === key) return 'dc:' + i;
+  return null; }
+function entName(id) { const [t, k] = id.split(':'); if (t === 'ag') return AG[k].nome; if (t === 'sp') return NOMI_SP[k]; if (t === 'rv') return 'Idea da costruire'; return NOMI_ED[DECO[+k].n] || DECO[+k].n; }
+function entAt(x, y) {
+  ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
+  const hits = ray.intersectObjects(SPRITES.filter(o => o.visible && o.userData.ent), false);
+  if (hits.length) return hits[0].object.userData.ent;
+  const h = hexAt(x, y); return h ? entAtHex(h) : null; }
+const freeHex = (h, except) => LAND.has(K(...h)) && !ROADT.has(K(...h)) && (() => { const e = entAtHex(h); return !e || e === except; })();
+
+/* ---- evidenziazioni ---- */
+function hexMark(color, op) { const g = new THREE.RingGeometry(.92, 1.12, 6, 1, Math.PI / 6); g.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op || .95, depthTest: false, depthWrite: false })); m.renderOrder = 100000; m.visible = false; scene.add(m); return m; }
+let MK = null; const MARKS = [];
+function edInitMarks() { if (MK) return; MK = { sel: hexMark(0xffc35a), hov: hexMark(0xffffff, .8) }; }
+function showMark(m, h, color) { if (!h) { m.visible = false; return; } const p = W(...h); m.position.set(p.x, .07, p.z); if (color !== undefined) m.material.color.setHex(color); m.visible = true; }
+function strokeMark(h, color) { let m = MARKS.find(x => !x.visible); if (!m) { m = hexMark(color, .9); MARKS.push(m); } showMark(m, h, color); }
+function clearStrokeMarks() { MARKS.forEach(m => { m.visible = false; }); }
+
+/* ---- azioni ---- */
+function moveEnt(id, h) { const [t, k] = id.split(':');
+  if (t === 'ag') AG[k].hex = [...h]; else if (t === 'rv') setHex(ROVINE_HEX[+k], h); else if (t === 'dc') { DECO[+k].q = h[0]; DECO[+k].r = h[1]; DECO[+k].o.position.set(W(...h).x, .02, W(...h).z); }
+  else setHex(entHex(id), h); }
+function ruota() { const id = ED.sel; if (!id) return; snapshot(); const [t, k] = id.split(':');
+  if (t === 'ag') AG[k].rot = ((AG[k].rot || 0) + 1) % 4; else if (t === 'dc') DECO[+k].rot = ((DECO[+k].rot || 0) + 1) % 4; else if (k === 'cantiere') D.rotCant = ((D.rotCant || 0) + 1) % 4;
+  else { toast('Questo elemento non si ruota'); ED.undo.pop(); return; }
+  refresh(t === 'dc'); }
+function elimina() { const id = ED.sel; if (!id) return; const [t, k] = id.split(':');
+  if (t !== 'dc') { toast('Gli edifici degli agenti e i luoghi speciali si possono spostare, non eliminare'); return; }
+  snapshot(); removeSprite(DECO[+k].o); DECO.splice(+k, 1); ED.sel = null; refresh(true); }
+function paint(h) { const key = K(...h), st = ED.stroke; if (st.done.has(key)) return; st.done.add(key);
+  if (ED.tool === 'terra') { if (hdist(...h) > MAX_DIST || LAND.has(key)) return; LAND.add(key); st.ch = true; strokeMark(h, 0x7dff8a); }
+  else if (ED.tool === 'scava') { if (!LAND.has(key)) return; const e = entAtHex(h); if (e && !e.startsWith('dc:')) { if (!st.warn) toast('Qui c\'è ' + entName(e) + ': spostalo prima di togliere la terra'); st.warn = true; return; }
+    if (LAND.size <= 7) return; if (e) { removeSprite(DECO[+e.slice(3)].o); DECO.splice(+e.slice(3), 1); st.deco = true; } LAND.delete(key); ROADT.delete(key); st.ch = true; strokeMark(h, 0xff6a5a); }
+  else if (ED.tool === 'strada') { if (!LAND.has(key)) return; if (st.mode === undefined) st.mode = !ROADT.has(key);
+    const e = entAtHex(h); if (st.mode) { if (e && e.startsWith('dc:')) { removeSprite(DECO[+e.slice(3)].o); DECO.splice(+e.slice(3), 1); st.deco = true; } ROADT.add(key); } else ROADT.delete(key); st.ch = true; strokeMark(h, 0xe0b070); }
+  else if (ED.tool === 'metti') { if (!freeHex(h)) return; const n = ED.item; DECO.push({ n, w: n === 'montagna' ? 2.9 : n === 'rupe' ? 2.5 : n === 'scogli' ? 1.7 : n === 'fontana' ? 1.9 : CASE.has(n) && n !== 'fattoria' ? 2.15 : 2.3, q: h[0], r: h[1], rot: 0 }); st.ch = true; st.deco = true; strokeMark(h, 0x9fe8ff); }
+}
+function endStroke() { const st = ED.stroke; ED.stroke = null; clearStrokeMarks(); if (!st) return;
+  if (!st.ch) { ED.undo.pop(); edButtons(); return; }
+  if (ED.tool === 'strada' || ED.tool === 'scava') rebuildRoads();
+  refresh(st.deco || ED.tool === 'metti'); }
+
+/* ---- puntatore in modalità editor ---- */
+function edDown(x, y) { edInitMarks();
+  if (ED.tool === 'sel') { const id = entAt(x, y); if (!id) return false; ED.sel = id; edSelShow(); ED.drag = { id, from: [...entHex(id)], to: null }; return true; }
+  const h = hexAt(x, y); if (!h) return false; snapshot(); ED.stroke = { done: new Set(), ch: false }; paint(h); return true; }
+function edMove(x, y) { const h = hexAt(x, y); if (!h) return;
+  if (ED.drag) { const ok = freeHex(h, ED.drag.id); ED.drag.to = ok ? h : null; showMark(MK.hov, h, ok ? 0x7dff8a : 0xff6a5a); return; }
+  if (ED.stroke) paint(h); }
+function edUp() {
+  if (ED.drag) { const dr = ED.drag; ED.drag = null; MK.hov.visible = false;
+    if (dr.to && K(...dr.to) !== K(...dr.from)) { snapshot(); moveEnt(dr.id, dr.to); refresh(dr.id.startsWith('dc:')); } return; }
+  if (ED.stroke) endStroke(); }
+function edSelShow() { if (!MK) return; if (!ED.sel) { MK.sel.visible = false; $('ed-info').textContent = ED.tool === 'sel' ? 'Tocca un elemento per selezionarlo, trascinalo per spostarlo' : $('ed-info').textContent; edButtons(); return; }
+  showMark(MK.sel, entHex(ED.sel)); $('ed-info').textContent = entName(ED.sel); edButtons(); }
+function edButtons() { const t = ED.sel && ED.sel.split(':')[0];
+  $('ed-rot').disabled = !ED.sel || ED.sel === 'sp:udienze' || ED.sel === 'sp:pozzo' || t === 'rv'; $('ed-del').disabled = t !== 'dc';
+  $('ed-undo').disabled = !ED.undo.length; $('ed-redo').disabled = !ED.redo.length; }
+const SUGG = { sel: 'Tocca un elemento per selezionarlo, trascinalo per spostarlo', terra: 'Tocca o trascina per aggiungere terra', scava: 'Tocca o trascina per togliere terra', strada: 'Tocca o trascina per tracciare o togliere una strada', metti: 'Scegli un elemento e tocca dove metterlo' };
+function setTool(t) { ED.tool = t; document.querySelectorAll('#ed-tools button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
+  $('ed-cat').hidden = t !== 'metti'; if (t !== 'sel') { ED.sel = null; if (MK) MK.sel.visible = false; } $('ed-info').textContent = SUGG[t]; edButtons(); }
+function edCatalog() { const c = $('ed-cat'); c.innerHTML = CATALOGO.filter(n => SPR_INFO[n]).map(n => `<button type="button" data-item="${n}" aria-pressed="${n === ED.item}"><img src="${(SPR_SRC[n] || 'assets/sprites/') + n}.webp" alt=""><span>${esc(NOMI_ED[n])}</span></button>`).join(''); }
+function editor(on) {
+  ED.on = on; document.body.classList.toggle('editing', on); $('editbar').hidden = !on; $('ed-btn').setAttribute('aria-pressed', String(on));
+  if (on) { edInitMarks(); setSheet(null); edCatalog(); setTool('sel'); toast('Editor: le modifiche si salvano da sole su questo dispositivo', 4); }
+  else { ED.sel = null; ED.drag = null; if (MK) { MK.sel.visible = false; MK.hov.visible = false; } clearStrokeMarks(); }
+}
+function esporta() { const b = new Blob([JSON.stringify(mapNow(), null, 1)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'mappa-isola-sire.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+function importa(file) { const r = new FileReader(); r.onload = () => { try { const m = JSON.parse(r.result); if (m.v !== 1 || !Array.isArray(m.land) || m.land.length < 7 || !m.agenti || !m.spec || !Array.isArray(m.deco)) throw 0; snapshot(); applyMap(m); toast('Mappa importata'); } catch (e) { toast('File non valido: serve una mappa esportata da qui'); } }; r.readAsText(file); }
+function originale() { if (!confirmaOriginale) { confirmaOriginale = true; $('ed-orig').textContent = 'Tocca ancora per confermare'; setTimeout(() => { confirmaOriginale = false; $('ed-orig').textContent = 'Isola originale'; }, 3500); return; }
+  try { localStorage.removeItem(MAPPA_KEY); } catch (e) { /* niente memoria: basta ricaricare */ } location.reload(); }
+let confirmaOriginale = false;
+$('ed-btn').onclick = () => editor(!ED.on);
+$('ed-fine').onclick = () => editor(false);
+$('ed-tools').addEventListener('click', e => { const b = e.target.closest('button[data-tool]'); if (b) setTool(b.dataset.tool); });
+$('ed-cat').addEventListener('click', e => { const b = e.target.closest('button[data-item]'); if (!b) return; ED.item = b.dataset.item; $('ed-cat').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
+$('ed-rot').onclick = ruota; $('ed-del').onclick = elimina; $('ed-undo').onclick = annulla; $('ed-redo').onclick = ripristina;
+$('ed-exp').onclick = esporta; $('ed-imp').onclick = () => $('ed-file').click(); $('ed-file').onchange = e => { if (e.target.files[0]) importa(e.target.files[0]); e.target.value = ''; };
+$('ed-orig').onclick = originale;
+addEventListener('keydown', e => { if (!ED.on || (e.target.closest && e.target.closest('input,textarea'))) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? ripristina() : annulla(); }
+  else if (e.key === 'Delete' || e.key === 'Backspace') elimina(); else if (e.key === 'r' || e.key === 'R') ruota(); });
+
 /* ================= avvio ================= */
 progress(.05, 'Carico le tessere…');
 Promise.all([fetchText('assets/kit.json').then(t => { progress(.7, 'Dipingo il terreno…'); return parse(t); }), texOr(SKIN.grass, 'assets/grass.jpg'), texOr(SKIN.dirt, 'assets/dirt.jpg'), loadTex('assets/sand.jpg'), texOr(SKIN.rock, 'assets/roccia.jpg'),
@@ -1014,7 +1203,7 @@ Promise.all([fetchText('assets/kit.json').then(t => { progress(.7, 'Dipingo il t
     .then(([base, sk]) => { Object.keys(sk).forEach(k => { SPR_SRC[k] = SKIN.dir; }); SPR_INFO = Object.assign({}, base, sk); Object.keys(SPR_INFO).forEach(sprTex); })])
   .then(([kit, grass, dirt, sand, roccia]) => {
     KIT = kit.scene; progress(1, 'Costruisco l\'isola…');
-    buildSkyClouds(buildUnderside(roccia));
+    GND.rock = roccia; buildSkyClouds(buildUnderside(roccia));
     buildWorld({ tGrass: { value: grass }, tDirt: { value: dirt }, tRoad: { value: roadTexture() }, tSand: { value: sand }, tCoast: { value: coastTexture() }, uHalf: { value: SHORE.half }, uGT0: { value: new THREE.Vector3(...SKIN.t0) }, uGT1: { value: new THREE.Vector3(...SKIN.t1) } });
     applyQuality(); applyStates(); ticker(false);
     $('veil').hidden = true; requestAnimationFrame(loop);
@@ -1024,7 +1213,7 @@ Promise.all([fetchText('assets/kit.json').then(t => { progress(.7, 'Dipingo il t
       .then(([knight, mage, rogue, deer, dragon]) => { Object.assign(CH, { knight, mage, rogue }); addLife({ knight, mage, rogue, deer, dragon }); applyQuality(); });
   })
   .catch(err => { console.error(err); fail('Non riesco a caricare il regno. Ricarica la pagina. (' + (err && err.message ? err.message : err) + ')'); });
-window.__regno = { cam, rotate, goTo, EV, AG, S };
+window.__regno = { cam, rotate, goTo, EV, AG, S, ED, DECO, LAND, ROADT, scr: (q, r) => { const v = W(q, r).project(camera); return [(v.x * .5 + .5) * innerWidth, (-v.y * .5 + .5) * innerHeight]; } };
 })();
 
 /* web app: si installa sulla schermata Home e funziona offline */

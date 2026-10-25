@@ -147,6 +147,32 @@ code{font-size:12px;color:#ffd98a}
 .carta a.dl{display:inline-block;color:#7a1f1f;font:700 14px var(--font-ui);margin:0 0 8px}
 @media (prefers-reduced-motion:reduce){.chip.flash,#ticker .new,#toast.show,.sigillo.timbrato{animation:none}.carta{transition:none}#compass svg,.goal i{transition:none}}
 @media (min-width:760px){#bottom{left:auto;width:440px}#mission{max-width:100%}}
+
+/* editor della mappa */
+#ed-btn{grid-column:1/3;width:auto;display:flex;align-items:center;justify-content:center;gap:6px;font:700 13px var(--font-display);letter-spacing:.04em}
+#ed-btn svg{width:22px;height:22px}
+#ed-btn[aria-pressed="true"]{border-color:var(--gold);background:linear-gradient(180deg,#8a3a20,#4a1d10)}
+body.editing #bottom,body.editing #mission,body.editing .chips{display:none!important}
+body.editing #pad{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 84px)}
+#editbar{left:0;right:0;bottom:0;padding:0 max(10px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 8px) max(10px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:6px}
+#ed-tools,#ed-row,#ed-cat{background:linear-gradient(180deg,var(--wood-2),var(--wood));border:2px solid var(--gold-dim);border-radius:14px;padding:5px}
+#ed-tools{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+#editbar button{background:none;border:0;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:48px;padding:4px 6px;font:700 11.5px var(--font-display);letter-spacing:.03em}
+#editbar button svg{width:24px;height:24px}
+#editbar button[aria-pressed="true"]{background:rgba(232,184,92,.22);box-shadow:inset 0 0 0 1.5px var(--gold)}
+#editbar button:disabled{opacity:.35;cursor:default}
+#ed-row{display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:space-between}
+@media (min-width:760px){#ed-info{flex:1 1 200px}}
+#ed-info{flex:1 1 100%;padding-top:4px!important;font:600 13.5px var(--font-ui);color:var(--ink-dim);padding:0 6px;min-width:0}
+#ed-cat{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin}
+#ed-cat button{flex:none;width:76px}
+#ed-cat img{width:56px;height:46px;object-fit:contain}
+#ed-more{position:relative}
+#ed-more summary{list-style:none;cursor:pointer;min-height:48px;display:flex;align-items:center;padding:0 10px;font:700 12px var(--font-display);border-radius:9px}
+#ed-more summary::-webkit-details-marker{display:none}
+#ed-more>div{position:absolute;right:0;bottom:calc(100% + 6px);display:flex;flex-direction:column;gap:2px;background:var(--wood);border:2px solid var(--gold-dim);border-radius:10px;padding:5px;min-width:180px}
+#ed-more>div button{flex-direction:row;justify-content:flex-start;font:700 13.5px var(--font-ui);padding:6px 10px}
+#editbar .fine{background:linear-gradient(180deg,#3f8a3a,#286025);border:1.5px solid var(--gold);padding:4px 16px;font-size:13px}
 </style>
 </head>
 <body>
@@ -176,8 +202,34 @@ code{font-size:12px;color:#ffd98a}
   <button class="pbtn" id="zoom-in" aria-label="Avvicina (+)"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M13 6v14M6 13h14" stroke="#e8b85c" stroke-width="3" stroke-linecap="round"/></svg></button>
   <button class="pbtn" id="zoom-out" aria-label="Allontana (−)"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M6 13h14" stroke="#e8b85c" stroke-width="3" stroke-linecap="round"/></svg></button>
   <button class="pbtn" id="compass" aria-label="Torna alla vista iniziale"><svg viewBox="0 0 24 24" aria-hidden="true" id="needle"><path d="M12 2l4 10h-8z" fill="#e2513a"/><path d="M12 22l-4-10h8z" fill="#f8eed6"/></svg><span id="dir-lbl">Nord</span></button>
+  <button class="pbtn" id="ed-btn" aria-pressed="false" aria-label="Editor della mappa"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M5 21l1.2-4.6L17 5.6a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L9.6 19.8z" fill="none" stroke="#e8b85c" stroke-width="2.2" stroke-linejoin="round"/><path d="M15 7.6l3.4 3.4" stroke="#e8b85c" stroke-width="2.2"/></svg><span>Editor</span></button>
 </div>
 
+
+<div class="hud" id="editbar" hidden role="toolbar" aria-label="Editor della mappa">
+  <div id="ed-tools">
+    <button type="button" data-tool="sel" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3l12 9-5.5 1L16 20l-2.6 1.2-3-7L6 18z" fill="#e8b85c"/></svg><span>Sposta</span></button>
+    <button type="button" data-tool="terra" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.6v8.8L12 21l-8-4.6V7.6z" fill="#5fbf4a" stroke="#e8b85c"/><path d="M12 8v8M8 12h8" stroke="#16100c" stroke-width="2.4"/></svg><span>Terra +</span></button>
+    <button type="button" data-tool="scava" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.6v8.8L12 21l-8-4.6V7.6z" fill="none" stroke="#e8b85c" stroke-dasharray="3 2"/><path d="M8 12h8" stroke="#e2513a" stroke-width="2.6"/></svg><span>Terra −</span></button>
+    <button type="button" data-tool="strada" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21L11 3M16 21L13 3" stroke="#c99a5b" stroke-width="2.4"/><path d="M12 6v2M12 11v2M12 16v2" stroke="#e8b85c" stroke-width="1.6"/></svg><span>Strada</span></button>
+    <button type="button" data-tool="metti" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l3 6H9zM7 10l3 6H4zM17 10l3 6h-6z" fill="#5fbf4a"/><path d="M12 15v6M9 18h6" stroke="#e8b85c" stroke-width="2"/></svg><span>Inserisci</span></button>
+  </div>
+  <div id="ed-cat" hidden></div>
+  <div id="ed-row">
+    <span id="ed-info" aria-live="polite"></span>
+    <button type="button" id="ed-rot" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a7 7 0 1 0 1.5 6" fill="none" stroke="#e8b85c" stroke-width="2.4" stroke-linecap="round"/><path d="M19 3v5h-5" fill="none" stroke="#e8b85c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Ruota</span></button>
+    <button type="button" id="ed-del" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13" fill="none" stroke="#e2513a" stroke-width="2.2" stroke-linejoin="round"/></svg><span>Elimina</span></button>
+    <button type="button" id="ed-undo" disabled aria-label="Annulla"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7L4 12l5 5M4 12h11a5 5 0 0 1 0 10h-2" fill="none" stroke="#e8b85c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Annulla</span></button>
+    <button type="button" id="ed-redo" disabled aria-label="Ripristina"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 7l5 5-5 5M20 12H9a5 5 0 0 0 0 10h2" fill="none" stroke="#e8b85c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Rifai</span></button>
+    <details id="ed-more"><summary>Altro</summary><div>
+      <button type="button" id="ed-exp">Esporta mappa</button>
+      <button type="button" id="ed-imp">Importa mappa</button>
+      <button type="button" id="ed-orig">Isola originale</button>
+      <input type="file" id="ed-file" accept="application/json,.json" hidden>
+    </div></details>
+    <button type="button" id="ed-fine" class="fine">Fine</button>
+  </div>
+</div>
 <div class="hud" id="bottom">
   <section class="sheet" id="sheet" hidden aria-live="polite"></section>
   <button id="mission" type="button"><svg class="ico" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 3h12l4 4v12H3z" fill="#efe1bd"/><circle cx="15" cy="16" r="4" fill="#b8321f"/><path d="M6 8h8M6 11h6" stroke="#7a5a2a"/></svg><span id="mission-t">Caricamento…</span></button>
