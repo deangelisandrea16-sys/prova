@@ -76,22 +76,22 @@ scene.add(new THREE.HemisphereLight(0xdcecff, 0x6b5a3c, 0.6));
 const sun = new THREE.DirectionalLight(0xffe7c4, 1.9);
 sun.position.set(-16, 24, 10);
 sun.castShadow = true;
-const sc = sun.shadow.camera; sc.left = -37; sc.right = 37; sc.top = 37; sc.bottom = -37; sc.near = 1; sc.far = 90;
+const sc = sun.shadow.camera; sc.left = -46; sc.right = 46; sc.top = 46; sc.bottom = -46; sc.near = 1; sc.far = 90;
 sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.025;
 scene.add(sun); scene.add(sun.target);
 const fill = new THREE.DirectionalLight(0x9cc4ff, 0.3); fill.position.set(14, 8, -12); scene.add(fill);
 
 /* ================= mappa ================= */
 const LAND = new Set();
-for (let q = -13; q <= 13; q++) for (let r = -13; r <= 13; r++) {
-  const d = hdist(q, r); if (d > 12) continue;
+for (let q = -16; q <= 16; q++) for (let r = -16; r <= 16; r++) {
+  const d = hdist(q, r); if (d > 15) continue;
   const p = W(q, r), a = Math.atan2(p.z, p.x);
-  const lim = 9.4 + .9 * Math.sin(3 * a + 1.1) + .6 * Math.sin(5 * a - .4);
+  const lim = 12.6 + 1 * Math.sin(3 * a + 1.1) + .6 * Math.sin(5 * a - .4);
   if (d <= lim) LAND.add(K(q, r));
 }
 const isLand = (q, r) => LAND.has(K(q, r));
 /* ---- mappa modificata con l'editor (salvata su questo dispositivo) ---- */
-const MAPPA_KEY = 'regno-mappa-v1';
+const MAPPA_KEY = 'regno-mappa-v2'; // v2: isola grande e vuota, da riempire con l'editor
 let MAPPA = null;
 try { MAPPA = JSON.parse(localStorage.getItem(MAPPA_KEY) || 'null'); if (!MAPPA || MAPPA.v !== 1 || !Array.isArray(MAPPA.land) || MAPPA.land.length < 7) MAPPA = null; } catch (e) { MAPPA = null; }
 const setHex = (dst, src) => { if (Array.isArray(src)) { dst[0] = +src[0]; dst[1] = +src[1]; } };
@@ -247,7 +247,7 @@ function coastTexture() {
   const tex = new THREE.CanvasTexture(out); tex.minFilter = THREE.LinearFilter; return tex;
 }
 function roadTexture() {
-  const N = 512, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d'); const sc = N / (2 * SHORE.half);
+  const N = 1024, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d'); const sc = N / (2 * SHORE.half);
   x.fillStyle = '#000'; x.fillRect(0, 0, N, N); x.strokeStyle = '#fff'; x.lineCap = 'round'; x.lineWidth = 1.05 * sc;
   const P = (h) => { const p = hexPos(h); return [(p.x + SHORE.half) * sc, (p.z + SHORE.half) * sc]; };
   LINKS.forEach(([a, b]) => { x.beginPath(); x.moveTo(...P(a)); x.lineTo(...P(b)); x.stroke(); });
@@ -377,7 +377,7 @@ function dissolveOut(o, dur, done) { fitDissolve(o); o.userData.set('uDir', -1);
   tween('dis' + o.id, dur || 1.2, k => o.userData.set('uProg', k), () => { o.visible = false; o.userData.set('uDir', 1); o.userData.set('uProg', 1); done && done(); }); }
 
 /* ================= acqua ================= */
-const SHORE = { size: 512, half: 46 };
+const SHORE = { size: 1024, half: 52 };
 function shoreTexture() {
   const N = SHORE.size, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d');
   const sc = N / (2 * SHORE.half);
@@ -430,7 +430,7 @@ function buildUnderside(tRock) {
   while (Q.length) { const k = Q.shift(); const [a, b] = k.split(',').map(Number);
     DIRS.forEach(([dq, dr]) => { const n = K(a + dq, b + dr); if (LAND.has(n) && !cd.has(n)) { cd.set(n, cd.get(k) + 1); Q.push(n); } }); }
   const rr = rng(4242), dep = new Map(); let maxD = 0;
-  LAND.forEach(k => { const d = cd.get(k); const v = .9 + Math.pow(d, 1.45) * 1.25 + rr() * 1.4 + (d === 0 ? 0 : rr() < .12 ? 2.2 : 0); dep.set(k, v); maxD = Math.max(maxD, v); });
+  LAND.forEach(k => { const d = cd.get(k); const v = .9 + Math.pow(Math.min(d, 9), 1.45) * 1.25 + rr() * 1.4 + (d === 0 ? 0 : rr() < .12 ? 2.2 : 0); dep.set(k, v); maxD = Math.max(maxD, v); });
   const pos = [], nor = [], RAD = 1.175, TOP = .09;
   const quad = (x1, z1, x2, z2, y1, y2, nx, nz) => { pos.push(x1, y1, z1, x1, y2, z1, x2, y2, z2, x1, y1, z1, x2, y2, z2, x2, y1, z2); for (let i = 0; i < 6; i++) nor.push(nx, 0, nz); };
   LAND.forEach(k => { const [a, b] = k.split(',').map(Number); const p = W(a, b); const D = dep.get(k);
@@ -470,7 +470,7 @@ const SKYCLOUDS = [];
 function buildSkyClouds(maxD) {
   const tex = cloudTex(), r = rng(99);
   for (let i = 0; i < 46; i++) {
-    const below = i < 30, a = r() * 6.28, d = below ? 14 + r() * 30 : 30 + r() * 22;
+    const below = i < 30, a = r() * 6.28, d = below ? 18 + r() * 34 : 38 + r() * 24;
     const m = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: below ? .55 + r() * .35 : .8, color: below ? 0xe9f1ff : 0xffffff });
     const s = new THREE.Sprite(m); const k = below ? 9 + r() * 12 : 7 + r() * 8; s.scale.set(k * 1.6, k, 1);
     s.position.set(Math.cos(a) * d, below ? -maxD * (.3 + r() * .65) : -2 - r() * 5, Math.sin(a) * d); s.renderOrder = 1;
@@ -609,7 +609,7 @@ function rebuildSmoke() {
 function buildWorld(groundU) {
   GND.U = groundU;
   if (MAPPA && Array.isArray(MAPPA.deco)) MAPPA.deco.forEach(d => { if (d && typeof d.n === 'string' && SPR_INFO[d.n]) DECO.push({ n: d.n, w: +d.w || 2.15, q: +d.q, r: +d.r, rot: +d.rot || 0 }); });
-  else genDeco();
+  // senza mappa salvata l'isola parte vuota: solo gli edifici principali, il resto si mette con l'editor
   rebuildOcc(false); // da qui in poi campi, fontana e case di contorno sono elementi liberi
   GND.sig = groundSig(); groundTiles(); GND.mesh = bakeStatic(groundU);
   spawnDeco();
@@ -656,7 +656,7 @@ function buildWorld(groundU) {
 
   // nuvole intorno all'isola
   ['cloud_big', 'cloud_small', 'cloud_big', 'cloud_small', 'cloud_big'].forEach((n, i) => { const c = model(n); c.traverse(m => { if (m.isMesh) { m.material = m.material.clone(); m.material.transparent = true; m.material.opacity = .8; m.receiveShadow = false; } });
-    c.scale.setScalar(1.4 + R() * .8); c.userData.a = i * Math.PI * .4 + R(); c.userData.r = 36 + R() * 6; c.userData.v = .5 + R() * .4; c.position.y = 3 + R() * 1.5; scene.add(c); clouds.push(c); });
+    c.scale.setScalar(1.4 + R() * .8); c.userData.a = i * Math.PI * .4 + R(); c.userData.r = 44 + R() * 6; c.userData.v = .5 + R() * .4; c.position.y = 3 + R() * 1.5; scene.add(c); clouds.push(c); });
 
   ORDER.forEach(k => addLabelAgent(k));
 }
@@ -740,7 +740,7 @@ function cheerAll(sec) { PEOPLE.forEach(P => { if (P.acts.Cheer) { P.cheer = sec
 
 /* ================= camera isometrica ================= */
 const VIEWS = ['Nord', 'Est', 'Sud', 'Ovest'];
-const cam = { yaw: Math.PI / 4, view: 0, pitch: 0.6155, tx: 0, ty: -5.5, tz: 0.8, zoom: innerWidth < innerHeight ? .8 : .66 }; // ty: si guarda un po' sotto, per vedere la roccia
+const cam = { yaw: Math.PI / 4, view: 0, pitch: 0.6155, tx: 0, ty: -5.5, tz: 0.8, zoom: innerWidth < innerHeight ? .64 : .52 }; // ty: si guarda un po' sotto, per vedere la roccia
 const HOME_ZOOM = cam.zoom;
 function frame() { const asp = innerWidth / innerHeight; let hw, hh; if (asp < 1) { hw = 14; hh = hw / asp; } else { hh = 12.5; hw = hh * asp; }
   camera.left = -hw; camera.right = hw; camera.top = hh; camera.bottom = -hh; camera.updateProjectionMatrix(); cam.hw = hw; cam.hh = hh; }
@@ -760,11 +760,11 @@ function rotate(step) {
     () => { cam.yaw = y1; cam.tx = gx + Math.sin(y1) * k0; cam.tz = gz + Math.cos(y1) * k0; rotating = false; });
   $('needle').style.transform = `rotate(${cam.view * 90}deg)`; $('dir-lbl').textContent = VIEWS[cam.view];
 }
-const ZMIN = .45, ZMAX = 3.4;
+const ZMIN = .35, ZMAX = 3.4;
 function zoomBy(f) { const z0 = cam.zoom, z1 = Math.min(ZMAX, Math.max(ZMIN, cam.zoom * f)); tween('zoom', .3, k => { cam.zoom = z0 + (z1 - z0) * k; }); }
 function goTo(pos, z) { const x0 = cam.tx, z0 = cam.tz, zz0 = cam.zoom, zz1 = z || Math.max(cam.zoom, 1.8);
   tween('pan', .9, k => { cam.tx = x0 + (pos.x - x0) * k; cam.tz = z0 + (pos.z - z0) * k; cam.zoom = zz0 + (zz1 - zz0) * k; }); }
-function clampCam() { const r = Math.hypot(cam.tx, cam.tz); if (r > 24) { cam.tx *= 24 / r; cam.tz *= 24 / r; } }
+function clampCam() { const r = Math.hypot(cam.tx, cam.tz); if (r > 32) { cam.tx *= 32 / r; cam.tz *= 32 / r; } }
 function panPixels(dx, dy) {
   const wpp = (2 * cam.hw / cam.zoom) / innerWidth, hpp = (2 * cam.hh / cam.zoom) / innerHeight / Math.sin(cam.pitch);
   const rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw), fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw);
@@ -1075,7 +1075,7 @@ const ED = { on: false, tool: 'sel', sel: null, item: 'pineta', undo: [], redo: 
 const CATALOGO = ['casa_a', 'casa_b', 'fattoria', 'pineta', 'cipressi', 'uliveto', 'vigneto', 'grano', 'montagna', 'rupe', 'scogli', 'fontana'];
 const NOMI_ED = { casa_a: 'Casa', casa_b: 'Casa', fattoria: 'Fattoria', pineta: 'Bosco', cipressi: 'Alberi', uliveto: 'Frutteto', vigneto: 'Vigneto', grano: 'Campo', montagna: 'Montagna', rupe: 'Rupe', scogli: 'Massi', fontana: 'Fontana' };
 const NOMI_SP = { cantiere: 'Cantiere', udienze: 'Approvazioni', pozzo: 'Pozzo dei desideri' };
-const MAX_DIST = 18;
+const MAX_DIST = 21;
 function mapNow() {
   return { v: 1, land: [...LAND], strade: [...ROADT],
     agenti: Object.fromEntries(ORDER.map(k => [k, [AG[k].hex[0], AG[k].hex[1], AG[k].rot || 0]])),
