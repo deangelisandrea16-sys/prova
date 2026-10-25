@@ -1,0 +1,152 @@
+{
+ "castello_E": {
+  "w": 518,
+  "h": 491,
+  "alpha": true,
+  "kb": 78
+ },
+ "castello_N": {
+  "w": 514,
+  "h": 486,
+  "alpha": true,
+  "kb": 77
+ },
+ "castello_O": {
+  "w": 528,
+  "h": 500,
+  "alpha": true,
+  "kb": 91
+ },
+ "castello_S": {
+  "w": 531,
+  "h": 500,
+  "alpha": true,
+  "kb": 92
+ },
+ "mercato_E": {
+  "w": 526,
+  "h": 490,
+  "alpha": true,
+  "kb": 101
+ },
+ "mercato_N": {
+  "w": 524,
+  "h": 477,
+  "alpha": true,
+  "kb": 102
+ },
+ "mercato_O": {
+  "w": 540,
+  "h": 505,
+  "alpha": true,
+  "kb": 106
+ },
+ "mercato_S": {
+  "w": 536,
+  "h": 492,
+  "alpha": true,
+  "kb": 112
+ },
+ "mulino_E": {
+  "w": 525,
+  "h": 490,
+  "alpha": true,
+  "kb": 83
+ },
+ "mulino_N": {
+  "w": 519,
+  "h": 492,
+  "alpha": true,
+  "kb": 85
+ },
+ "mulino_O": {
+  "w": 534,
+  "h": 500,
+  "alpha": true,
+  "kb": 97
+ },
+ "mulino_S": {
+  "w": 534,
+  "h": 504,
+  "alpha": true,
+  "kb": 94
+ },
+ "taverna_E": {
+  "w": 503,
+  "h": 487,
+  "alpha": true,
+  "kb": 75
+ },
+ "taverna_N": {
+  "w": 510,
+  "h": 481,
+  "alpha": true,
+  "kb": 76
+ },
+ "taverna_O": {
+  "w": 535,
+  "h": 483,
+  "alpha": true,
+  "kb": 78
+ },
+ "taverna_S": {
+  "w": 534,
+  "h": 490,
+  "alpha": true,
+  "kb": 82
+ },
+ "tesoro_E": {
+  "w": 519,
+  "h": 458,
+  "alpha": true,
+  "kb": 75
+ },
+ "tesoro_N": {
+  "w": 523,
+  "h": 452,
+  "alpha": true,
+  "kb": 76
+ },
+ "tesoro_O": {
+  "w": 536,
+  "h": 500,
+  "alpha": true,
+  "kb": 84
+ },
+ "tesoro_S": {
+  "w": 541,
+  "h": 499,
+  "alpha": true,
+  "kb": 84
+ },
+ "torre_E": {
+  "w": 437,
+  "h": 490,
+  "alpha": true,
+  "kb": 57
+ },
+ "torre_N": {
+  "w": 443,
+  "h": 492,
+  "alpha": true,
+  "kb": 59
+ },
+ "torre_O": {
+  "w": 467,
+  "h": 506,
+  "alpha": true,
+  "kb": 61
+ },
+ "torre_S": {
+  "w": 470,
+  "h": 507,
+  "alpha": true,
+  "kb": 66
+ },
+ "tempio_N": {
+  "w": 529,
+  "h": 466,
+  "alpha": true,
+  "kb": 79
+ }
+}
