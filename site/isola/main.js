@@ -602,7 +602,11 @@ function spawnDeco() {
   DECO.forEach((d, i) => { removeSprite(d.o); const single = !SPR_INFO[d.n + '_N'];
     const o = makeSprite(d.n, d.w || 2.15, W(d.q, d.r), rotFacing(new THREE.Vector3(0, 0, 1), d.rot), { flip: single && d.rot % 2 === 1 });
     o.userData.ent = 'dc:' + i; d.o = o; });
+  // elementi con un nome proprio (es. Monte di zucchero): etichetta sull'isola
+  Object.keys(LBL).filter(k => k.startsWith('dl:')).forEach(k => { LBL[k].el.remove(); delete LBL[k]; });
+  DECO.forEach((d, i) => { if (ETICHETTE[d.n]) { addLabelObj('dl:' + i, ETICHETTE[d.n], W(d.q, d.r), 2.6, null, 'small'); LBL['dl:' + i].obj = d.o; } });
 }
+const ETICHETTE = { zucchero: 'Monte di C.' };
 function rebuildSmoke() {
   if (SMOKE) { scene.remove(SMOKE); SMOKE.geometry.dispose(); SMOKE.material.dispose(); SMOKE = null; }
   buildSmoke(DECO.filter(d => CASE.has(d.n)).map(d => W(d.q, d.r).add(new THREE.Vector3(.1, d.n === 'fattoria' ? 1.4 : 1.5, -.1))));
@@ -885,6 +889,7 @@ function setSheet(name, html, btn) {
 }
 function kpiHtml(o) { return `<div class="kpis">${Object.entries(o).map(([k, v]) => `<div class="kpi"><small>${esc(k)}</small><b>${esc(v)}</b></div>`).join('')}</div>`; }
 function openPlace(key) {
+  if (String(key).startsWith('dl:')) return;
   if (AG[key]) { const a = AG[key], st = STATI[a.stato]; goTo(a.pos);
     setSheet('p-' + key, `<div class="row"><h2>${esc(a.nome)} · livello ${a.liv}</h2><span class="st ${a.stato}">${st.t}</span></div><p>${esc(a.ruolo)}</p>${kpiHtml(a.kpi)}` +
       (a.stato === 'bloccato' && a.blocco ? `<div class="todo"><b>Serve da te:</b> ${esc(a.blocco.cosa)}.<br>Come: ${esc(a.blocco.come)}.</div><button class="act" data-editto="${key}">Apri l'editto<small>Demo: il sigillo approva e parte il messaggero</small></button>` : '') +
@@ -1073,8 +1078,8 @@ function loop(t) {
 /* ================= editor della mappa ================= */
 // Strumenti: seleziona/sposta, terra +, terra −, strada, inserisci. La mappa resta salvata su questo dispositivo.
 const ED = { on: false, tool: 'sel', sel: null, item: 'pineta', undo: [], redo: [], drag: null, stroke: null };
-const CATALOGO = ['casa_a', 'casa_b', 'fattoria', 'pineta', 'cipressi', 'uliveto', 'vigneto', 'grano', 'montagna', 'rupe', 'scogli', 'fontana'];
-const NOMI_ED = { casa_a: 'Casa', casa_b: 'Casa', fattoria: 'Fattoria', pineta: 'Bosco', cipressi: 'Alberi', uliveto: 'Frutteto', vigneto: 'Vigneto', grano: 'Campo', montagna: 'Montagna', rupe: 'Rupe', scogli: 'Massi', fontana: 'Fontana' };
+const CATALOGO = ['zucchero', 'casa_a', 'casa_b', 'fattoria', 'pineta', 'cipressi', 'uliveto', 'vigneto', 'grano', 'montagna', 'rupe', 'scogli', 'fontana'];
+const NOMI_ED = { zucchero: 'Monte di C.', casa_a: 'Casa', casa_b: 'Casa', fattoria: 'Fattoria', pineta: 'Bosco', cipressi: 'Alberi', uliveto: 'Frutteto', vigneto: 'Vigneto', grano: 'Campo', montagna: 'Montagna', rupe: 'Rupe', scogli: 'Massi', fontana: 'Fontana' };
 const NOMI_SP = { cantiere: 'Cantiere', udienze: 'Approvazioni', pozzo: 'Pozzo dei desideri' };
 const MAX_DIST = 21;
 function mapNow() {
@@ -1148,7 +1153,7 @@ function paint(h) { const key = K(...h), st = ED.stroke; if (st.done.has(key)) r
     if (LAND.size <= 7) return; if (e) { removeSprite(DECO[+e.slice(3)].o); DECO.splice(+e.slice(3), 1); st.deco = true; } LAND.delete(key); ROADT.delete(key); st.ch = true; strokeMark(h, 0xff6a5a); }
   else if (ED.tool === 'strada') { if (!LAND.has(key)) return; if (st.mode === undefined) st.mode = !ROADT.has(key);
     const e = entAtHex(h); if (st.mode) { if (e && e.startsWith('dc:')) { removeSprite(DECO[+e.slice(3)].o); DECO.splice(+e.slice(3), 1); st.deco = true; } ROADT.add(key); } else ROADT.delete(key); st.ch = true; strokeMark(h, 0xe0b070); }
-  else if (ED.tool === 'metti') { if (!freeHex(h)) return; const n = ED.item; DECO.push({ n, w: n === 'montagna' ? 2.9 : n === 'rupe' ? 2.5 : n === 'scogli' ? 1.7 : n === 'fontana' ? 1.9 : CASE.has(n) && n !== 'fattoria' ? 2.15 : 2.3, q: h[0], r: h[1], rot: 0 }); st.ch = true; st.deco = true; strokeMark(h, 0x9fe8ff); }
+  else if (ED.tool === 'metti') { if (!freeHex(h)) return; const n = ED.item; DECO.push({ n, w: n === 'montagna' || n === 'zucchero' ? 2.9 : n === 'rupe' ? 2.5 : n === 'scogli' ? 1.7 : n === 'fontana' ? 1.9 : CASE.has(n) && n !== 'fattoria' ? 2.15 : 2.3, q: h[0], r: h[1], rot: 0 }); st.ch = true; st.deco = true; strokeMark(h, 0x9fe8ff); }
 }
 function endStroke() { const st = ED.stroke; ED.stroke = null; clearStrokeMarks(); if (!st) return;
   if (!st.ch) { ED.undo.pop(); edButtons(); return; }
