@@ -1026,3 +1026,6 @@ Promise.all([fetchText('assets/kit.json').then(t => { progress(.7, 'Dipingo il t
   .catch(err => { console.error(err); fail('Non riesco a caricare il regno. Ricarica la pagina. (' + (err && err.message ? err.message : err) + ')'); });
 window.__regno = { cam, rotate, goTo, EV, AG, S };
 })();
+
+/* web app: si installa sulla schermata Home e funziona offline */
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
