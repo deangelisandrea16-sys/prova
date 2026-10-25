@@ -699,10 +699,10 @@ let rotating = false;
 function rotate(step) {
   if (rotating || !step) return; rotating = true;
   cam.view = (cam.view + step + 4) % 4; const y0 = cam.yaw, y1 = cam.yaw - step * Math.PI / 2;
-  // a zoom d'insieme l'isola torna al centro mentre gira (niente isola "decentrata" dopo la rotazione)
-  const home = cam.zoom <= HOME_ZOOM * 1.15, x0 = cam.tx, z0 = cam.tz;
-  tween('rot', .5 + .12 * (Math.abs(step) - 1), k => { cam.yaw = y0 + (y1 - y0) * k; if (home) { cam.tx = x0 * (1 - k); cam.tz = z0 + (.8 - z0) * k; } },
-    () => { cam.yaw = y1; rotating = false; });
+  // punto del terreno al centro dello schermo: resta fermo mentre la vista gira
+  const k0 = cam.ty / Math.tan(cam.pitch), gx = cam.tx - Math.sin(y0) * k0, gz = cam.tz - Math.cos(y0) * k0;
+  tween('rot', .5 + .12 * (Math.abs(step) - 1), k => { cam.yaw = y0 + (y1 - y0) * k; cam.tx = gx + Math.sin(cam.yaw) * k0; cam.tz = gz + Math.cos(cam.yaw) * k0; },
+    () => { cam.yaw = y1; cam.tx = gx + Math.sin(y1) * k0; cam.tz = gz + Math.cos(y1) * k0; rotating = false; });
   $('needle').style.transform = `rotate(${cam.view * 90}deg)`; $('dir-lbl').textContent = VIEWS[cam.view];
 }
 const ZMIN = .45, ZMAX = 3.4;
