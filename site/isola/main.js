@@ -244,7 +244,7 @@ function coastTexture() {
     x.closePath(); x.fill(); });
   const t = document.createElement('canvas'); t.width = t.height = N / 8; const tx = t.getContext('2d'); tx.imageSmoothingEnabled = true; tx.drawImage(c, 0, 0, N / 8, N / 8);
   const out = document.createElement('canvas'); out.width = out.height = N; const o = out.getContext('2d'); o.imageSmoothingEnabled = true; o.drawImage(t, 0, 0, N, N);
-  const tex = new THREE.CanvasTexture(out); tex.minFilter = THREE.LinearFilter; return tex;
+  const tex = new THREE.CanvasTexture(out); tex.minFilter = THREE.LinearFilter; tex.flipY = false; // riga del canvas = asse z del mondo return tex;
 }
 function roadTexture() {
   const N = 1024, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d'); const sc = N / (2 * SHORE.half);
@@ -252,10 +252,11 @@ function roadTexture() {
   const P = (h) => { const p = hexPos(h); return [(p.x + SHORE.half) * sc, (p.z + SHORE.half) * sc]; };
   LINKS.forEach(([a, b]) => { x.beginPath(); x.moveTo(...P(a)); x.lineTo(...P(b)); x.stroke(); });
   x.fillStyle = '#fff'; x.beginPath(); x.arc(...P([0, 0]), 2.1 * sc, 0, Math.PI * 2); x.fill(); // piazza del castello
+  ROADT.forEach(k => { x.beginPath(); x.arc(...P(k.split(',').map(Number)), .55 * sc, 0, Math.PI * 2); x.fill(); }); // anche le tessere-strada isolate
   const out = document.createElement('canvas'); out.width = out.height = N; const o = out.getContext('2d');
   const t = document.createElement('canvas'); t.width = t.height = N / 4; const tx = t.getContext('2d'); tx.imageSmoothingEnabled = true; tx.drawImage(c, 0, 0, N / 4, N / 4);
   o.imageSmoothingEnabled = true; o.drawImage(t, 0, 0, N, N); o.globalAlpha = .55; o.drawImage(c, 0, 0); o.globalAlpha = 1;
-  const tex = new THREE.CanvasTexture(out); tex.minFilter = THREE.LinearFilter; return tex;
+  const tex = new THREE.CanvasTexture(out); tex.minFilter = THREE.LinearFilter; tex.flipY = false; return tex;
 }
 
 /* ================= materiale con dissolvenza ================= */
