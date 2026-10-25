@@ -38,6 +38,20 @@ const K = (q, r) => q + ',' + r;
 const hdist = (q, r) => (Math.abs(q) + Math.abs(r) + Math.abs(-q - r)) / 2;
 const W = (q, r) => new THREE.Vector3(2 * q + r, 0, SQ3 * r);
 const hexPos = (h) => W(h[0], h[1]);
+/* ================= skin del regno ================= */
+const SKINS = {
+  mediterraneo: { nome: 'Mediterraneo', dir: 'assets/sprites/', grass: 'assets/grass.jpg', dirt: 'assets/dirt.jpg', rock: 'assets/roccia.jpg',
+    sky: ['#3f86c4', '#7cbde6', '#bfe3f7'], t0: [.62, .66, .4], t1: [.86, .84, .56] },
+  // SKIN-AUTO-INIZIO (righe scritte dallo script di integrazione)
+  ...Object.fromEntries(Object.entries(/*SKINDATA*/{"vichinghi": {"nome": "Vichinghi", "sky": ["#2e5378", "#7298bd", "#dbe7f1"], "t0": [0.62, 0.7, 0.7], "t1": [0.8, 0.86, 0.86], "pronta": true}}/*FINE*/)
+    .map(([k, v]) => [k, Object.assign({ dir: `assets/skins/${k}/`, grass: `assets/skins/${k}/grass.jpg`, dirt: `assets/skins/${k}/dirt.jpg`, rock: `assets/skins/${k}/rock.jpg` }, v)])),
+  // SKIN-AUTO-FINE
+};
+const SKIN_ID = (() => { let k = new URLSearchParams(location.search).get('skin'); if (!k) { try { k = localStorage.getItem('regno-skin'); } catch (e) { k = null; } } return SKINS[k] && SKINS[k].pronta !== false ? k : 'mediterraneo'; })();
+const SKIN = SKINS[SKIN_ID];
+function scegliSkin(k) { try { localStorage.setItem('regno-skin', k); } catch (e) { /* senza memoria del browser basta il parametro */ } const u = new URL(location.href); u.searchParams.set('skin', k); location.href = u.toString(); }
+['--sea-3', '--sea-2', '--sea-1'].forEach((v, i) => document.documentElement.style.setProperty(v, SKIN.sky[i]));
+
 function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const R = rng(1729);
 const pick = (arr) => arr[Math.floor(R() * arr.length)];
@@ -122,6 +136,7 @@ const parse = (text) => new Promise((res, rej) => {
   finally { window.createImageBitmap = cib; }
 });
 const texLoader = new THREE.TextureLoader();
+const texOr = (u, def) => u === def ? loadTex(u) : loadTex(u).catch(() => loadTex(def));
 const loadTex = (url) => new Promise((res, rej) => texLoader.load(url, t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); res(t); }, undefined, rej));
 
 function model(name) {
@@ -172,7 +187,7 @@ function paintGround(mat, u) {
       .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\nvGN=normalize(mat3(modelMatrix)*objectNormal);')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGW=(modelMatrix*vec4(transformed,1.)).xyz;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
-      varying vec3 vGW; varying vec3 vGN; uniform sampler2D tGrass; uniform sampler2D tDirt; uniform sampler2D tRoad; uniform sampler2D tSand; uniform sampler2D tCoast; uniform float uHalf;
+      varying vec3 vGW; varying vec3 vGN; uniform sampler2D tGrass; uniform sampler2D tDirt; uniform sampler2D tRoad; uniform sampler2D tSand; uniform sampler2D tCoast; uniform float uHalf; uniform vec3 uGT0; uniform vec3 uGT1;
       float gH(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
       float gN(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(gH(i),gH(i+vec2(1,0)),f.x),mix(gH(i+vec2(0,1)),gH(i+vec2(1,1)),f.x),f.y); }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
@@ -186,11 +201,11 @@ function paintGround(mat, u) {
           vec3 gr=pow(texture2D(tGrass,vGW.xz/6.5).rgb,vec3(2.2));
           vec3 gr2=pow(texture2D(tGrass,vGW.xz/17.+.37).rgb,vec3(2.2));
           float mac=gN(vGW.xz*.09)*.6+gN(vGW.xz*.31)*.4;
-          gr=mix(gr,gr2,.3)*mix(vec3(.62,.66,.4),vec3(.86,.84,.56),mac);
+          gr=mix(gr,gr2,.3)*mix(uGT0,uGT1,mac);
           vec3 dt=pow(texture2D(tDirt,vGW.xz/3.4).rgb,vec3(2.2))*(.88+.24*gN(vGW.xz*.5));
           float dAmt=smoothstep(.18,.62,gRoad+(gN(vGW.xz*1.7)-.5)*.25);
           vec3 sd=pow(texture2D(tSand,vGW.xz/3.6).rgb,vec3(2.2));
-          float sAmt=(1.-smoothstep(.5,.78,texture2D(tCoast,ruv).r+(gN(vGW.xz*.9)-.5)*.22))*(1.-dAmt);
+          float sAmt=0.; // isola volante: niente spiaggia (sand.jpg resta disponibile)
           diffuseColor.rgb=mix(gBase,mix(mix(gr,dt,dAmt),sd,sAmt)*.38,gRep); // il terreno piatto è molto illuminato: si abbassa per non bruciare i colori
         }`)
       .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
@@ -261,10 +276,10 @@ function makeDynamic(name, edge) {
 function fitDissolve(o) { if (o.isSprite) return; o.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(o); o.userData.set('uY0', b.min.y); o.userData.set('uY1', b.max.y); }
 
 /* ================= sprite dipinti (4 viste) ================= */
-let SPR_INFO = {}; const SPR_TEX = new Map(); const SPRITES = [];
+let SPR_INFO = {}; const SPR_SRC = {}; const SPR_TEX = new Map(); const SPRITES = [];
 const VIEW_SFX = ['N', 'E', 'S', 'O'];
 function sprTex(name) {
-  if (!SPR_TEX.has(name)) { const t = texLoader.load('assets/sprites/' + name + '.webp'); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; SPR_TEX.set(name, t); }
+  if (!SPR_TEX.has(name)) { const t = texLoader.load((SPR_SRC[name] || 'assets/sprites/') + name + '.webp'); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; SPR_TEX.set(name, t); }
   return SPR_TEX.get(name);
 }
 function spriteMat(edge) {
@@ -387,6 +402,63 @@ function buildWater() {
   scene.add(water);
 }
 
+
+/* ================= isola volante: roccia sotto e nuvole ================= */
+function buildUnderside(tRock) {
+  // distanza dalla costa in tessere: più si va verso il centro, più la roccia scende
+  const cd = new Map(), Q = [];
+  LAND.forEach(k => { const [a, b] = k.split(',').map(Number); if (DIRS.some(([dq, dr]) => !isLand(a + dq, b + dr))) { cd.set(k, 0); Q.push(k); } });
+  while (Q.length) { const k = Q.shift(); const [a, b] = k.split(',').map(Number);
+    DIRS.forEach(([dq, dr]) => { const n = K(a + dq, b + dr); if (LAND.has(n) && !cd.has(n)) { cd.set(n, cd.get(k) + 1); Q.push(n); } }); }
+  const rr = rng(4242), dep = new Map(); let maxD = 0;
+  LAND.forEach(k => { const d = cd.get(k); const v = .9 + Math.pow(d, 1.45) * 1.25 + rr() * 1.4 + (d === 0 ? 0 : rr() < .12 ? 2.2 : 0); dep.set(k, v); maxD = Math.max(maxD, v); });
+  const pos = [], nor = [], RAD = 1.175, TOP = .09;
+  const quad = (x1, z1, x2, z2, y1, y2, nx, nz) => { pos.push(x1, y1, z1, x1, y2, z1, x2, y2, z2, x1, y1, z1, x2, y2, z2, x2, y1, z2); for (let i = 0; i < 6; i++) nor.push(nx, 0, nz); };
+  LAND.forEach(k => { const [a, b] = k.split(',').map(Number); const p = W(a, b); const D = dep.get(k);
+    DIRS.forEach(([dq, dr]) => { const n = K(a + dq, b + dr); const top = LAND.has(n) ? -dep.get(n) : TOP; if (top <= -D) return;
+      const ang = Math.atan2(Math.sqrt(3) * dr, 2 * dq + dr), a1 = ang - Math.PI / 6, a2 = ang + Math.PI / 6;
+      quad(p.x + Math.cos(a1) * RAD, p.z + Math.sin(a1) * RAD, p.x + Math.cos(a2) * RAD, p.z + Math.sin(a2) * RAD, top, -D, Math.cos(ang), Math.sin(ang)); }); });
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0, side: THREE.DoubleSide });
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.tRock = { value: tRock }; sh.uniforms.uMaxD = { value: maxD };
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vRW; varying vec3 vRN;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRW=(modelMatrix*vec4(transformed,1.)).xyz; vRN=normalize(mat3(modelMatrix)*objectNormal);');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vRW; varying vec3 vRN; uniform sampler2D tRock; uniform float uMaxD;')
+      .replace('#include <map_fragment>', `#include <map_fragment>
+        vec3 an=abs(vRN)+1e-4; vec2 sc=vec2(.2,.15);
+        vec3 c=(texture2D(tRock,vRW.zy*sc).rgb*an.x+texture2D(tRock,vRW.xy*sc+.31).rgb*an.z)/(an.x+an.z);
+        c=pow(c,vec3(2.2));
+        float f=clamp(-vRW.y/uMaxD,0.,1.);
+        float strata=.85+.15*sin(vRW.y*2.3+sin(vRW.x*.7+vRW.z*.5)*1.6);   // stratificazioni orizzontali
+        float lip=smoothstep(-1.4,0.,vRW.y);                              // ombra sotto il bordo erboso
+        c*=strata*(1.-.45*lip);
+        c=mix(c*.62,vec3(.36,.52,.72)*.55,smoothstep(.25,1.,f)*.85);        // in basso si perde nella foschia del cielo
+        diffuseColor.rgb=c;`);
+  };
+  m.customProgramCacheKey = () => 'roccia';
+  const mesh = new THREE.Mesh(g, m); mesh.receiveShadow = true; scene.add(mesh);
+  return maxD;
+}
+// nuvole soffici sotto e intorno all'isola
+function cloudTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); const r = rng(77);
+  for (let i = 0; i < 14; i++) { const rad = 12 + r() * 16, cx = 18 + rad * .3 + r() * (92 - rad * .6), cy = 40 + r() * 48; const g = x.createRadialGradient(cx, cy, 0, cx, cy, rad);
+    g.addColorStop(0, 'rgba(255,255,255,.9)'); g.addColorStop(.6, 'rgba(250,250,255,.5)'); g.addColorStop(1, 'rgba(240,245,255,0)'); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, rad, 0, 7); x.fill(); }
+  const t = new THREE.CanvasTexture(c); return t;
+}
+const SKYCLOUDS = [];
+function buildSkyClouds(maxD) {
+  const tex = cloudTex(), r = rng(99);
+  for (let i = 0; i < 46; i++) {
+    const below = i < 30, a = r() * 6.28, d = below ? 14 + r() * 30 : 30 + r() * 22;
+    const m = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: below ? .55 + r() * .35 : .8, color: below ? 0xe9f1ff : 0xffffff });
+    const s = new THREE.Sprite(m); const k = below ? 9 + r() * 12 : 7 + r() * 8; s.scale.set(k * 1.6, k, 1);
+    s.position.set(Math.cos(a) * d, below ? -maxD * (.3 + r() * .65) : -2 - r() * 5, Math.sin(a) * d); s.renderOrder = 1;
+    s.userData = { a, d, v: (.004 + r() * .006) * (r() < .5 ? 1 : -1) }; scene.add(s); SKYCLOUDS.push(s);
+  }
+}
+
 /* ================= terreno corrotto (agente bloccato) ================= */
 function corruption(center) {
   const m = new THREE.ShaderMaterial({ transparent: true, depthWrite: false,
@@ -464,7 +536,6 @@ function buildWorld(groundU) {
     const [q, r] = k.split(',').map(Number); const p = W(q, r);
     const water = []; for (let d = 0; d < 6; d++) if (!isLand(q + DIRS[d][0], r + DIRS[d][1])) water.push(d);
     if (isRoadTile(k)) { const m = matchSet(ROADS, [...ROADSET.get(k)]); if (m) { addStatic('hex_road_' + m.name, p, m.rot); return; } }
-    if (water.length && !OCC.has(k) && !ROADSET.has(k)) { const m = matchSet(COAST, water); if (m) { addStatic('hex_coast_' + m.name + '_waterless', p, m.rot); return; } }
     addStatic('hex_grass', p, 0);
   });
   // natura e borgo
@@ -503,7 +574,6 @@ function buildWorld(groundU) {
   for (let d = 0; d < 6; d++) { const v = W(...DIRS[d]).multiplyScalar(.5), side = new THREE.Vector3(-v.z, 0, v.x).normalize().multiplyScalar(.62);
     addStatic(pick(['barrel', 'crate_A_big', 'sack', 'wheelbarrow', 'crate_long_A', 'resource_lumber']), W(...DIRS[d]).multiplyScalar(1.5).add(side), R() * 6); }
   // ninfee
-  for (let i = 0; i < 16; i++) { const a = R() * 6.28, d = 25 + R() * 4; addStatic(pick(['waterlily_A', 'waterlily_B', 'waterplant_A', 'waterplant_B']), new THREE.Vector3(Math.cos(a) * d, -0.14, Math.sin(a) * d), R() * 6); }
 
   bakeStatic(groundU);
   HOUSES.forEach(([p, n, w]) => makeSprite(n, w || 2.15, p));
@@ -615,14 +685,14 @@ function cheerAll(sec) { PEOPLE.forEach(P => { if (P.acts.Cheer) { P.cheer = sec
 
 /* ================= camera isometrica ================= */
 const VIEWS = ['Nord', 'Est', 'Sud', 'Ovest'];
-const cam = { yaw: Math.PI / 4, view: 0, pitch: 0.6155, tx: 0, tz: 0.8, zoom: innerWidth < innerHeight ? 1.0 : .86 };
+const cam = { yaw: Math.PI / 4, view: 0, pitch: 0.6155, tx: 0, ty: -5.5, tz: 0.8, zoom: innerWidth < innerHeight ? .8 : .66 }; // ty: si guarda un po' sotto, per vedere la roccia
 const HOME_ZOOM = cam.zoom;
 function frame() { const asp = innerWidth / innerHeight; let hw, hh; if (asp < 1) { hw = 14; hh = hw / asp; } else { hh = 12.5; hw = hh * asp; }
   camera.left = -hw; camera.right = hw; camera.top = hh; camera.bottom = -hh; camera.updateProjectionMatrix(); cam.hw = hw; cam.hh = hh; }
 function placeCam() {
   const c = Math.cos(cam.pitch), s = Math.sin(cam.pitch), d = 70;
-  camera.position.set(cam.tx + Math.sin(cam.yaw) * c * d, s * d, cam.tz + Math.cos(cam.yaw) * c * d);
-  camera.lookAt(cam.tx, 0, cam.tz); camera.zoom = cam.zoom; camera.updateProjectionMatrix();
+  camera.position.set(cam.tx + Math.sin(cam.yaw) * c * d, cam.ty + s * d, cam.tz + Math.cos(cam.yaw) * c * d);
+  camera.lookAt(cam.tx, cam.ty, cam.tz); camera.zoom = cam.zoom; camera.updateProjectionMatrix();
 }
 let rotating = false;
 // rotazione continua attorno al centro dello schermo; gli edifici dipinti cambiano vista in dissolvenza incrociata
@@ -635,7 +705,7 @@ function rotate(step) {
     () => { cam.yaw = y1; rotating = false; });
   $('needle').style.transform = `rotate(${cam.view * 90}deg)`; $('dir-lbl').textContent = VIEWS[cam.view];
 }
-const ZMIN = .55, ZMAX = 3.4;
+const ZMIN = .45, ZMAX = 3.4;
 function zoomBy(f) { const z0 = cam.zoom, z1 = Math.min(ZMAX, Math.max(ZMIN, cam.zoom * f)); tween('zoom', .3, k => { cam.zoom = z0 + (z1 - z0) * k; }); }
 function goTo(pos, z) { const x0 = cam.tx, z0 = cam.tz, zz0 = cam.zoom, zz1 = z || Math.max(cam.zoom, 1.8);
   tween('pan', .9, k => { cam.tx = x0 + (pos.x - x0) * k; cam.tz = z0 + (pos.z - z0) * k; cam.zoom = zz0 + (zz1 - zz0) * k; }); }
@@ -791,6 +861,7 @@ $('n-info').onclick = () => setSheet('info', `<h2>Come leggere il regno</h2>
   <p>Ogni edificio intorno al castello è un agente. Le <b>tende</b> davanti al castello sono approvazioni in attesa, le <b>rovine</b> sono idee da costruire, il <b>mulino</b> gira quando Jarvis è attivo, il <b>drago nero</b> arriva con le fatture scadute, la <b>barra d'oro</b> è il tesoro del mese rispetto all'obiettivo.</p>
   <p>Tocca lo <b>stemma S</b> in alto per sentire il Sire. Il pulsante in basso porta dritto alla cosa da fare.</p>
   <p><b>Comandi:</b> trascina per spostarti, pizzica o usa + e − per lo zoom, le frecce curve ruotano la vista (tasti Q ed E). Tutto è anche nell'<b>Elenco</b>.</p>
+  <p><b>Skin del regno:</b></p><div class="skins">${Object.entries(SKINS).filter(([, v]) => v.pronta !== false).map(([k, v]) => `<button class="act skin-btn" data-skin="${k}" aria-pressed="${k === SKIN_ID}">${esc(v.nome)}${k === SKIN_ID ? '<small>in uso</small>' : ''}</button>`).join('')}</div>
   <button class="act" id="q-btn">Qualità grafica: ${S.quality}<small>Abbassala se il telefono scalda</small></button>
   <p id="fps-line">Misuro i fotogrammi…</p><p><small>Modelli KayKit di Kay Lousberg e animali di Quaternius (CC0). Dati [PROVA].</small></p>`, 'n-info');
 $('n-snd').onclick = () => { AUDIO.set(!S.suoni); $('n-snd').setAttribute('aria-pressed', String(S.suoni)); $('snd-w').setAttribute('opacity', S.suoni ? '1' : '.3'); $('snd-lbl').textContent = S.suoni ? 'Suoni sì' : 'Suoni'; if (S.suoni) AUDIO.fanfare(); };
@@ -801,6 +872,7 @@ document.addEventListener('click', e => {
   const o = e.target.closest('[data-open]'); if (o) { openPlace(o.dataset.open); return; }
   const ed = e.target.closest('[data-editto]'); if (ed) { setSheet(null); editto(ed.dataset.editto); return; }
   const ev = e.target.closest('[data-ev]'); if (ev) { setSheet(null); EV[ev.dataset.ev](); return; }
+  const sk = e.target.closest('.skin-btn'); if (sk) { if (sk.dataset.skin !== SKIN_ID) scegliSkin(sk.dataset.skin); return; }
   if (e.target.closest('#q-btn')) { S.quality = S.quality === 'alta' ? 'bassa' : 'alta'; applyQuality(); setSheet(null); $('n-info').click(); }
 });
 
@@ -924,6 +996,7 @@ function loop(t) {
   if (D.dragon) { const g = D.dragon; g.mixer.update(dt); g.a += dt * .6; const c = AG.fatture.pos, r = 2.2 + (1 - g.k) * 22, h = 3.6 + (1 - g.k) * 8;
     g.o.position.set(c.x + Math.cos(g.a) * r, h + Math.sin(time * 1.3) * .3, c.z + Math.sin(g.a) * r); g.o.rotation.y = -g.a; }
   ORDER.forEach(k => { const a = AG[k]; a.ring.material.opacity = a.stato === 'bloccato' ? .55 + .45 * Math.sin(time * 4) : .9; });
+  SKYCLOUDS.forEach(c => { c.userData.a += dt * c.userData.v; c.position.x = Math.cos(c.userData.a) * c.userData.d; c.position.z = Math.sin(c.userData.a) * c.userData.d; });
   stepPeople(dt);
   AUDIO.tick(time);
   updateSprites();
@@ -934,12 +1007,14 @@ function loop(t) {
 
 /* ================= avvio ================= */
 progress(.05, 'Carico le tessere…');
-Promise.all([fetchText('assets/kit.json').then(t => { progress(.7, 'Dipingo il terreno…'); return parse(t); }), loadTex('assets/grass.jpg'), loadTex('assets/dirt.jpg'), loadTex('assets/sand.jpg'),
-  fetch('assets/sprites/sprites.json').then(r => r.json()).then(j => { SPR_INFO = j; Object.keys(j).forEach(sprTex); })])
-  .then(([kit, grass, dirt, sand]) => {
+Promise.all([fetchText('assets/kit.json').then(t => { progress(.7, 'Dipingo il terreno…'); return parse(t); }), texOr(SKIN.grass, 'assets/grass.jpg'), texOr(SKIN.dirt, 'assets/dirt.jpg'), loadTex('assets/sand.jpg'), texOr(SKIN.rock, 'assets/roccia.jpg'),
+  // sprite della skin; quelli che mancano vengono presi dalla skin di base
+  Promise.all([fetch('assets/sprites/sprites.json').then(r => r.json()), SKIN.dir === 'assets/sprites/' ? {} : fetch(SKIN.dir + 'sprites.json').then(r => r.json()).catch(() => ({}))])
+    .then(([base, sk]) => { Object.keys(sk).forEach(k => { SPR_SRC[k] = SKIN.dir; }); SPR_INFO = Object.assign({}, base, sk); Object.keys(SPR_INFO).forEach(sprTex); })])
+  .then(([kit, grass, dirt, sand, roccia]) => {
     KIT = kit.scene; progress(1, 'Costruisco l\'isola…');
-    buildWater();
-    buildWorld({ tGrass: { value: grass }, tDirt: { value: dirt }, tRoad: { value: roadTexture() }, tSand: { value: sand }, tCoast: { value: coastTexture() }, uHalf: { value: SHORE.half } });
+    buildSkyClouds(buildUnderside(roccia));
+    buildWorld({ tGrass: { value: grass }, tDirt: { value: dirt }, tRoad: { value: roadTexture() }, tSand: { value: sand }, tCoast: { value: coastTexture() }, uHalf: { value: SHORE.half }, uGT0: { value: new THREE.Vector3(...SKIN.t0) }, uGT1: { value: new THREE.Vector3(...SKIN.t1) } });
     applyQuality(); applyStates(); ticker(false);
     $('veil').hidden = true; requestAnimationFrame(loop);
     // abitanti, animali e drago arrivano dopo, senza bloccare l'isola
