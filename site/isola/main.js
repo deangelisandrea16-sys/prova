@@ -815,7 +815,7 @@ function toast(t, sec) { const el = $('toast'); el.textContent = t; el.hidden = 
 const sheet = $('sheet'); let openSheet = null;
 function syncPad() { $('pad').hidden = !sheet.hidden && innerWidth < 760; }
 function setSheet(name, html, btn) {
-  ['n-list', 'n-ev', 'n-info'].forEach(id => $(id).setAttribute('aria-pressed', 'false'));
+  ['n-list', 'n-ev', 'n-info', 'n-skin'].forEach(id => $(id).setAttribute('aria-pressed', 'false'));
   if (!name || openSheet === name) { sheet.hidden = true; openSheet = null; syncPad(); return; }
   openSheet = name; sheet.innerHTML = html; sheet.hidden = false; if (btn) $(btn).setAttribute('aria-pressed', 'true'); syncPad();
 }
@@ -864,6 +864,7 @@ $('n-info').onclick = () => setSheet('info', `<h2>Come leggere il regno</h2>
   <p><b>Skin del regno:</b></p><div class="skins">${Object.entries(SKINS).filter(([, v]) => v.pronta !== false).map(([k, v]) => `<button class="act skin-btn" data-skin="${k}" aria-pressed="${k === SKIN_ID}">${esc(v.nome)}${k === SKIN_ID ? '<small>in uso</small>' : ''}</button>`).join('')}</div>
   <button class="act" id="q-btn">Qualità grafica: ${S.quality}<small>Abbassala se il telefono scalda</small></button>
   <p id="fps-line">Misuro i fotogrammi…</p><p><small>Modelli KayKit di Kay Lousberg e animali di Quaternius (CC0). Dati [PROVA].</small></p>`, 'n-info');
+$('n-skin').onclick = () => setSheet('skin', `<h2>Skin del regno</h2><p>Scegli lo stile dell'isola. La pagina si ricarica con la nuova skin.</p><div class="skins">${Object.entries(SKINS).filter(([, v]) => v.pronta !== false).map(([k, v]) => `<button class="act skin-btn" data-skin="${k}" aria-pressed="${k === SKIN_ID}">${esc(v.nome)}${k === SKIN_ID ? '<small>in uso</small>' : ''}</button>`).join('')}</div>`, 'n-skin');
 $('n-snd').onclick = () => { AUDIO.set(!S.suoni); $('n-snd').setAttribute('aria-pressed', String(S.suoni)); $('snd-w').setAttribute('opacity', S.suoni ? '1' : '.3'); $('snd-lbl').textContent = S.suoni ? 'Suoni sì' : 'Suoni'; if (S.suoni) AUDIO.fanfare(); };
 $('rot-l').onclick = () => rotate(-1); $('rot-r').onclick = () => rotate(1);
 $('zoom-in').onclick = () => zoomBy(1.3); $('zoom-out').onclick = () => zoomBy(1 / 1.3);
