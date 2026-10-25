@@ -274,5 +274,11 @@
   "h": 530,
   "alpha": true,
   "kb": 175
+ },
+ "zucchero": {
+  "w": 640,
+  "h": 569,
+  "alpha": true,
+  "kb": 1
  }
 }
