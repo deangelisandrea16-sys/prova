@@ -88,7 +88,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 #ticker time{color:#ffd98a;font-weight:800;margin-right:6px;font-variant-numeric:tabular-nums}
 #ticker .new{animation:slidein .5s}
 @keyframes slidein{from{transform:translateY(8px);opacity:0}}
-#nav{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:linear-gradient(180deg,var(--wood-2),var(--wood));border:2px solid var(--gold-dim);border-radius:14px;padding:5px}
+#nav{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;background:linear-gradient(180deg,var(--wood-2),var(--wood));border:2px solid var(--gold-dim);border-radius:14px;padding:5px}
 #nav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0;border-radius:9px;font:700 11.5px var(--font-display);letter-spacing:.04em;min-height:48px}
 #nav button svg{width:26px;height:26px}
 #nav button[aria-pressed="true"]{background:rgba(232,184,92,.2)}
@@ -178,6 +178,7 @@ code{font-size:12px;color:#ffd98a}
     <button id="n-list" aria-pressed="false"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M5 6h16M5 13h16M5 20h16" stroke="#e8b85c" stroke-width="2.6" stroke-linecap="round"/></svg>Elenco</button>
     <button id="n-ev" aria-pressed="false"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M13 3l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill="#e8b85c" stroke="#6b4a18"/></svg>Eventi</button>
     <button id="n-snd" aria-pressed="false"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M4 10h5l6-5v16l-6-5H4z" fill="#e8b85c"/><path id="snd-w" d="M18 9a6 6 0 0 1 0 8M20.5 6.5a10 10 0 0 1 0 13" fill="none" stroke="#e8b85c" stroke-width="2" stroke-linecap="round" opacity=".3"/></svg><span id="snd-lbl">Suoni</span></button>
+    <button id="n-skin" aria-pressed="false"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M13 3a10 10 0 1 0 0 20c1.5 0 2-1 2-2s-1-1.5-1-2.5 1-1.5 2-1.5h2.5A4.5 4.5 0 0 0 23 12.5C23 7 18.5 3 13 3z" fill="none" stroke="#e8b85c" stroke-width="2"/><circle cx="8" cy="12" r="1.6" fill="#e8b85c"/><circle cx="11" cy="7.5" r="1.6" fill="#e8b85c"/><circle cx="16.5" cy="8" r="1.6" fill="#e8b85c"/></svg>Skin</button>
     <button id="n-info" aria-pressed="false"><svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="10" fill="none" stroke="#e8b85c" stroke-width="2"/><path d="M13 11v7M13 7v1" stroke="#e8b85c" stroke-width="2.6" stroke-linecap="round"/></svg>Leggenda</button>
   </nav>
 </div>
