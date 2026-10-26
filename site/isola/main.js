@@ -26,9 +26,9 @@ const AG = {
 };
 const ORDER = ['sire', 'jarvis', 'preventivi', 'fatture', 'contatti', 'outreach', 'cervello'];
 const S = { tesoro: 21900, obiettivo: 25000, regole: 48, preventivi: 4, udienze: 2, scadute: 1, idee: 19, imp: { n: 3, tot: 8 }, quality: 'alta', suoni: false };
-const CANTIERE_HEX = [5, -1], UDIENZE_HEX = [1, 1], POZZO_HEX = [-1, -1], FONTANA_HEX = [-2, 1];
-const ROVINE_HEX = [[-5, 1], [-5, 2], [-5, 3], [-3, 5], [-2, 5]];
-const CAMPI_HEX = [[3, 1], [2, 2], [3, 2], [2, 3], [4, 1]];
+const CANTIERE_HEX = [7, -3], UDIENZE_HEX = [2, 2], POZZO_HEX = [-2, -2], FONTANA_HEX = [-2, 3];
+const ROVINE_HEX = [[-7, 2], [-7, 4], [-6, 6], [-3, 7], [-1, 7]];
+const CAMPI_HEX = [[6, 2], [5, 4], [7, 1], [4, 6], [8, 0]];
 const CONTORNO = { 'building_blacksmith_blue': [2, -1], 'building_lumbermill_blue': [5, -4], 'building_archeryrange_blue': [-1, 5] };
 const NEWS = [['09:10', 'Preventivi · Hotel X ha accettato € 4.800'], ['10:32', 'Fatture · fattura #118 scaduta da 3 giorni'], ['11:05', 'Outreach · fermo, serve la tua approvazione'], ['12:40', 'Cervello · salvate 3 regole nuove']];
 
@@ -38,6 +38,14 @@ const K = (q, r) => q + ',' + r;
 const hdist = (q, r) => (Math.abs(q) + Math.abs(r) + Math.abs(-q - r)) / 2;
 const W = (q, r) => new THREE.Vector3(2 * q + r, 0, SQ3 * r);
 const hexPos = (h) => W(h[0], h[1]);
+// scala del regno: ogni cosa occupa un raggio di tessere (0 = una tessera, 1 = 7 tessere, 2 = 19) e ha una larghezza coerente
+const HD = (a, b) => hdist(a[0] - b[0], a[1] - b[1]);
+const RAGGIO = { sire: 2, agente: 1, cantiere: 1, udienze: 0, pozzo: 0, rovina: 0,
+  montagna: 2, zucchero: 2, rupe: 1, fattoria: 1, pineta: 1, cipressi: 1, uliveto: 1, vigneto: 1, grano: 1, scogli: 0, fontana: 0, casa_a: 0, casa_b: 0 };
+const LARGH = { sire: 8.2, agente: 5.2, cantiere: 4.8, pozzo: 1.7, tenda: 1.05, rovina: 2.6, casa: 2.6,
+  montagna: 9.5, zucchero: 9.5, rupe: 5.4, fattoria: 5.2, pineta: 4.8, cipressi: 4.6, uliveto: 4.8, vigneto: 5, grano: 5, scogli: 2.4, fontana: 2.4, casa_a: 2.6, casa_b: 2.6 };
+const raggioDi = (id) => { const [t, k] = id.split(':'); if (t === 'ag') return k === 'sire' ? RAGGIO.sire : RAGGIO.agente; if (t === 'sp') return RAGGIO[k] || 0; if (t === 'rv') return 0; return RAGGIO[DECO[+k].n] || 0; };
+const tessereDi = (h, rg) => { const out = []; for (let dq = -rg; dq <= rg; dq++) for (let dr = Math.max(-rg, -dq - rg); dr <= Math.min(rg, -dq + rg); dr++) out.push([h[0] + dq, h[1] + dr]); return out; };
 /* ================= skin del regno ================= */
 const SKINS = {
   mediterraneo: { nome: 'Mediterraneo', dir: 'assets/sprites/', grass: 'assets/grass.jpg', dirt: 'assets/dirt.jpg', rock: 'assets/roccia.jpg',
@@ -142,8 +150,8 @@ function rebuildRoads() { ROADSET.clear(); LINKS.length = 0;
 rebuildRoads();
 // tessere occupate da agenti e luoghi speciali (gli elementi liberi stanno in DECO)
 function rebuildOcc(gen) { OCC.clear();
-  ORDER.forEach(k => occ(AG[k].hex, k));
-  occ(CANTIERE_HEX, 'cantiere'); occ(UDIENZE_HEX, 'udienze'); occ(POZZO_HEX, 'pozzo');
+  ORDER.forEach(k => tessereDi(AG[k].hex, k === 'sire' ? RAGGIO.sire : RAGGIO.agente).forEach(h => occ(h, k)));
+  tessereDi(CANTIERE_HEX, RAGGIO.cantiere).forEach(h => occ(h, 'cantiere')); occ(UDIENZE_HEX, 'udienze'); occ(POZZO_HEX, 'pozzo');
   ROVINE_HEX.forEach(h => occ(h, 'rovina'));
   if (gen) { occ(FONTANA_HEX, 'fontana'); CAMPI_HEX.forEach(h => occ(h, 'campo')); Object.entries(CONTORNO).forEach(([m, h]) => { if (!OCC.has(K(...h))) occ(h, m); }); } }
 rebuildOcc(!MAPPA);
@@ -611,11 +619,11 @@ const rotFacing = (base, rot) => base.clone().applyAxisAngle(new THREE.Vector3(0
 function removeSprite(o) { if (!o) return; scene.remove(o); if (o.userData.ghost) scene.remove(o.userData.ghost); const i = SPRITES.indexOf(o); if (i >= 0) SPRITES.splice(i, 1); o.material.dispose(); }
 function spawnDeco() {
   DECO.forEach((d, i) => { removeSprite(d.o); const single = !SPR_INFO[d.n + '_N'];
-    const o = makeSprite(d.n, d.w || 2.15, W(d.q, d.r), rotFacing(new THREE.Vector3(0, 0, 1), d.rot), { flip: single && d.rot % 2 === 1 });
+    const o = makeSprite(d.n, LARGH[d.n] || 2.6, W(d.q, d.r), rotFacing(new THREE.Vector3(0, 0, 1), d.rot), { flip: single && d.rot % 2 === 1 });
     o.userData.ent = 'dc:' + i; d.o = o; });
   // elementi con un nome proprio (es. Monte di zucchero): etichetta sull'isola
   Object.keys(LBL).filter(k => k.startsWith('dl:')).forEach(k => { LBL[k].el.remove(); delete LBL[k]; });
-  DECO.forEach((d, i) => { if (ETICHETTE[d.n]) { addLabelObj('dl:' + i, ETICHETTE[d.n], W(d.q, d.r), 2.6, null, 'small'); LBL['dl:' + i].obj = d.o; } });
+  DECO.forEach((d, i) => { if (ETICHETTE[d.n]) { addLabelObj('dl:' + i, ETICHETTE[d.n], W(d.q, d.r), (LARGH[d.n] || 2.6) * .75, null, 'small'); LBL['dl:' + i].obj = d.o; } });
 }
 const ETICHETTE = { zucchero: 'Monte di C.' };
 function rebuildSmoke() {
@@ -626,6 +634,8 @@ function buildWorld(groundU) {
   GND.U = groundU;
   if (MAPPA && Array.isArray(MAPPA.deco)) MAPPA.deco.forEach(d => { if (d && typeof d.n === 'string' && SPR_INFO[d.n]) DECO.push({ n: d.n, w: +d.w || 2.15, q: +d.q, r: +d.r, rot: +d.rot || 0 }); });
   // senza mappa salvata l'isola parte vuota: solo gli edifici principali, il resto si mette con l'editor
+  ROVINE_HEX.forEach(h => LAND.add(K(...h)));
+  if (sistemaSovrapposti()) toast('Con la nuova scala alcuni elementi sono stati spostati per non sovrapporsi');
   rebuildOcc(false); // da qui in poi campi, fontana e case di contorno sono elementi liberi
   GND.sig = groundSig(); groundTiles(); GND.mesh = bakeStatic(groundU);
   spawnDeco();
@@ -635,8 +645,8 @@ function buildWorld(groundU) {
   // quartieri degli agenti
   ORDER.forEach(k => {
     const a = AG[k]; const p = hexPos(a.hex);
-    const o = makeSprite(SPR_OF[k], k === 'sire' ? 4.3 : 2.75, p);
-    o.userData.key = k; o.userData.ent = 'ag:' + k; PICK.push(o); a.obj = o; a.pos = p; a.top = 2.2;
+    const wd = k === 'sire' ? LARGH.sire : LARGH.agente; const o = makeSprite(SPR_OF[k], wd, p);
+    o.userData.key = k; o.userData.ent = 'ag:' + k; PICK.push(o); a.obj = o; a.pos = p; a.top = wd * .78;
     a.ring = statusRing(p);
   });
   fan = null; // le pale sono dipinte
@@ -646,23 +656,23 @@ function buildWorld(groundU) {
 
   // udienze: tende davanti al castello
   D.tents = [];
-  [[-.5, -.4], [.55, -.25], [0, .45]].forEach(([x, z], i) => { const t = makeSprite('tenda', 1.15, new THREE.Vector3()); t.userData.off = new THREE.Vector3(x, 0, z); t.visible = i < S.udienze; t.userData.key = 'udienze'; t.userData.ent = 'sp:udienze'; PICK.push(t); D.tents.push(t); });
+  [[-.5, -.4], [.55, -.25], [0, .45]].forEach(([x, z], i) => { const t = makeSprite('tenda', LARGH.tenda, new THREE.Vector3()); t.userData.off = new THREE.Vector3(x, 0, z); t.visible = i < S.udienze; t.userData.key = 'udienze'; t.userData.ent = 'sp:udienze'; PICK.push(t); D.tents.push(t); });
   addLabelObj('udienze', 'Approvazioni', hexPos(UDIENZE_HEX), 1.2, null, 'small'); D.hitUdi = hitbox('udienze', hexPos(UDIENZE_HEX), 1.2);
 
   // pozzo dei desideri
-  D.pozzo = makeSprite('pozzo', 1.8, hexPos(POZZO_HEX)); D.pozzo.userData.key = 'pozzo'; D.pozzo.userData.ent = 'sp:pozzo'; PICK.push(D.pozzo); addLabelObj('pozzo', 'Pozzo dei desideri', hexPos(POZZO_HEX), 1.3, null, 'small');
+  D.pozzo = makeSprite('pozzo', LARGH.pozzo, hexPos(POZZO_HEX)); D.pozzo.userData.key = 'pozzo'; D.pozzo.userData.ent = 'sp:pozzo'; PICK.push(D.pozzo); addLabelObj('pozzo', 'Pozzo dei desideri', hexPos(POZZO_HEX), 1.3, null, 'small');
 
   // cantiere dell'impossibile
   D.stages = {};
-  ['cantiere_1', 'cantiere_2', 'cantiere_3', 'torre'].forEach(n => { const o = makeSprite(n, 2.5, hexPos(CANTIERE_HEX)); o.visible = false; o.userData.key = 'cantiere'; o.userData.ent = 'sp:cantiere'; PICK.push(o); D.stages[n] = o; });
+  ['cantiere_1', 'cantiere_2', 'cantiere_3', 'torre'].forEach(n => { const o = makeSprite(n, LARGH.cantiere, hexPos(CANTIERE_HEX)); o.visible = false; o.userData.key = 'cantiere'; o.userData.ent = 'sp:cantiere'; PICK.push(o); D.stages[n] = o; });
   D.scaff = new THREE.Object3D();
   D.stageNow = stageFor(S.imp.n); D.stages[D.stageNow].visible = true;
-  addLabelObj('cantiere', 'Cantiere', hexPos(CANTIERE_HEX), 2.0, 3); D.hitCant = hitbox('cantiere', hexPos(CANTIERE_HEX), 2);
+  addLabelObj('cantiere', 'Cantiere', hexPos(CANTIERE_HEX), 3.6, 3); D.hitCant = hitbox('cantiere', hexPos(CANTIERE_HEX), 3.6);
   D.rotCant = (MAPPA && MAPPA.spec && +MAPPA.spec.rotCant) || 0;
 
   // rovine = idee da costruire
-  D.lots = ROVINE_HEX.map((h, i) => { const ru = makeSprite('rovina', 2.1, hexPos(h), null, { edge: 0xff8a3a }); ru.userData.key = 'rovine'; ru.userData.ent = 'rv:' + i; PICK.push(ru);
-    const ho = makeSprite(i % 2 ? 'casa_a' : 'casa_b', 2.15, hexPos(h)); ho.visible = false; ho.userData.key = 'rovine'; ho.userData.ent = 'rv:' + i; PICK.push(ho); return { ru, ho, done: false }; });
+  D.lots = ROVINE_HEX.map((h, i) => { const ru = makeSprite('rovina', LARGH.rovina, hexPos(h), null, { edge: 0xff8a3a }); ru.userData.key = 'rovine'; ru.userData.ent = 'rv:' + i; PICK.push(ru);
+    const ho = makeSprite(i % 2 ? 'casa_a' : 'casa_b', LARGH.casa, hexPos(h)); ho.visible = false; ho.userData.key = 'rovine'; ho.userData.ent = 'rv:' + i; PICK.push(ho); return { ru, ho, done: false }; });
   addLabelObj('rovine', 'Idee da costruire', hexPos(ROVINE_HEX[2]), 1.1, null, 'small');
   placeAll();
 
@@ -749,7 +759,7 @@ function stepPeople(dt) {
   });
 }
 function spokeWalker(g, d0, h) {
-  const P = typeof g === 'string' ? spritePerson(g, { h: (h || .62) * 1.45 }) : person(g, { h: h || .62 }); P.dir = d0; P.out = true;
+  const P = typeof g === 'string' ? spritePerson(g, { h: (h || .62) * .95 }) : person(g, { h: h || .62 }); P.dir = d0; P.out = true;
   P.next = (Q) => { const a = spokePoint(Q.dir, .7), b = spokePoint(Q.dir, 3.4); const s = new THREE.Vector3(-(b.z - a.z), 0, b.x - a.x).normalize().multiplyScalar(.2);
     if (Q.out) walkTo(Q, a.clone().add(s), b.clone().add(s)); else { walkTo(Q, b.clone().sub(s), a.clone().sub(s)); Q.dir = (Q.dir + 1 + Math.floor(Math.random() * 4)) % 6; }
     Q.out = !Q.out; };
@@ -759,7 +769,7 @@ function addLife(G) {
   // personaggi dipinti della skin, se ci sono; altrimenti i modelli 3D
   if (hasWalker('omino_a')) { const kinds = ['omino_a', 'omino_b', 'messaggero'].filter(hasWalker);
     for (let i = 0; i < 6; i++) spokeWalker(kinds[i % kinds.length], i, .62);
-    if (hasWalker('guardia')) [.8, -.8].forEach(x => { const P = spritePerson('guardia', { h: .95, post: x }); P.guard = true; });
+    if (hasWalker('guardia')) [.8, -.8].forEach(x => { const P = spritePerson('guardia', { h: .62, post: x * 1.6 }); P.guard = true; });
     G = Object.assign({}, G, { knight: null, mage: null, rogue: null }); }
   if (hasWalker('animale')) G = Object.assign({}, G, { deer: 'animale' });
   const chars = [G.knight, G.mage, G.rogue].filter(Boolean);
@@ -771,11 +781,11 @@ function addLife(G) {
   }
   if (G.deer) {
     const spots = []; LAND.forEach(k => { const [q, r] = k.split(',').map(Number); const p = W(q, r), ang = Math.atan2(p.z, p.x) * 180 / Math.PI; if (hdist(q, r) === 4 && ang > -35 && ang < 35 && !OCC.has(k) && !ROADSET.has(k)) spots.push(p); });
-    spots.slice(0, 3).forEach((p, i) => { const P = G.deer === 'animale' ? spritePerson('animale', { h: .8, speed: .35, walkAnim: 'Walk', idleAnim: 'Idle', pause: 4 }) : person(G.deer, { h: .5, bones: true, keepProps: true, speed: .35, walkAnim: 'Walk', idleAnim: 'Eating', pause: 4 }); P.home = p.clone().add(new THREE.Vector3(-1.1, 0, .3)); P.o.position.copy(P.home); P.play('Eating');
+    spots.slice(0, 3).forEach((p, i) => { const P = G.deer === 'animale' ? spritePerson('animale', { h: .55, speed: .35, walkAnim: 'Walk', idleAnim: 'Idle', pause: 4 }) : person(G.deer, { h: .5, bones: true, keepProps: true, speed: .35, walkAnim: 'Walk', idleAnim: 'Eating', pause: 4 }); P.home = p.clone().add(new THREE.Vector3(-1.1, 0, .3)); P.o.position.copy(P.home); P.play('Eating');
       P.next = (Q) => { const t = Q.home.clone().add(new THREE.Vector3((Math.random() - .5) * 1.4, 0, (Math.random() - .5) * 1.4)); walkTo(Q, Q.o.position.clone(), t, 'Walk'); }; P.wait = 2 + i * 2; });
   }
   if (SPR_INFO.minaccia_1) { // minaccia dipinta (drago, kraken, drone…): due fotogrammi che si alternano
-    const o = new THREE.Sprite(spriteMat()); o.userData.width = 3.2; o.userData.cy = .5; o.userData.set = () => {}; setSpriteImg(o, 'minaccia_1'); scene.add(o);
+    const o = new THREE.Sprite(spriteMat()); o.userData.width = 5.5; o.userData.cy = .5; o.userData.set = () => {}; setSpriteImg(o, 'minaccia_1'); scene.add(o);
     let t = 0, f = 1; const nm = SPR_INFO.minaccia_4 ? 4 : SPR_INFO.minaccia_2 ? 2 : 1; const mixer = { update: (dt) => { t += dt; const nf = Math.floor(t * (nm > 2 ? 7 : 3)) % nm + 1; if (nf !== f && SPR_INFO['minaccia_' + nf]) { f = nf; o.userData.img = null; setSpriteImg(o, 'minaccia_' + nf); } } };
     D.dragon = { o, mixer, a: 0, k: S.scadute > 0 ? 1 : 0 }; o.visible = S.scadute > 0; G = Object.assign({}, G, { dragon: null }); }
   if (G.dragon) { const o = THREE.SkeletonUtils.clone(G.dragon.scene); o.scale.setScalar(1.3 / realHeight(o));
@@ -1003,7 +1013,7 @@ function messaggero(k) {
   const a = AG[k], d = dirOf(a.hex); toast(`Il messaggero corre verso ${a.nome}`); AUDIO.horn(); goTo(spokePoint(d < 0 ? 0 : d, 2), 1.7);
   const tpl = hasWalker('messaggero') ? 'messaggero' : CH.rogue || CH.knight;
   if (!tpl || d < 0) { later(1.5, () => approva(k)); return; }
-  const P = typeof tpl === 'string' ? spritePerson(tpl, { h: .92, speed: 2.1, walkAnim: 'Running_A', pause: 0 }) : person(tpl, { h: .64, speed: 2.1, walkAnim: 'Running_A', pause: 0 });
+  const P = typeof tpl === 'string' ? spritePerson(tpl, { h: .6, speed: 2.1, walkAnim: 'Running_A', pause: 0 }) : person(tpl, { h: .64, speed: 2.1, walkAnim: 'Running_A', pause: 0 });
   walkTo(P, spokePoint(d, .7), spokePoint(d, 3.4), 'Running_A');
   P.arrive = (Q) => { Q.arrive = null; Q.play('Cheer'); approva(k); later(2.2, () => { scene.remove(Q.o); const i = PEOPLE.indexOf(Q); if (i >= 0) PEOPLE.splice(i, 1); }); };
 }
@@ -1156,11 +1166,11 @@ function hexAt(x, y) { ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 
 function entHex(id) { const [t, k] = id.split(':');
   if (t === 'ag') return AG[k].hex; if (t === 'rv') return ROVINE_HEX[+k]; if (t === 'dc') { const d = DECO[+k]; return [d.q, d.r]; }
   return k === 'cantiere' ? CANTIERE_HEX : k === 'udienze' ? UDIENZE_HEX : POZZO_HEX; }
-function entAtHex(h) { const key = K(...h);
-  for (const k of ORDER) if (K(...AG[k].hex) === key) return 'ag:' + k;
-  for (const k of ['cantiere', 'udienze', 'pozzo']) if (K(...entHex('sp:' + k)) === key) return 'sp:' + k;
-  for (let i = 0; i < ROVINE_HEX.length; i++) if (K(...ROVINE_HEX[i]) === key) return 'rv:' + i;
-  for (let i = 0; i < DECO.length; i++) if (K(DECO[i].q, DECO[i].r) === key) return 'dc:' + i;
+function entAtHex(h, except) { const ok = (id) => id !== except && HD(entHex(id), h) <= raggioDi(id);
+  for (const k of ORDER) if (ok('ag:' + k)) return 'ag:' + k;
+  for (const k of ['cantiere', 'udienze', 'pozzo']) if (ok('sp:' + k)) return 'sp:' + k;
+  for (let i = 0; i < ROVINE_HEX.length; i++) if (ok('rv:' + i)) return 'rv:' + i;
+  for (let i = 0; i < DECO.length; i++) if (ok('dc:' + i)) return 'dc:' + i;
   return null; }
 function entName(id) { const [t, k] = id.split(':'); if (t === 'ag') return AG[k].nome; if (t === 'sp') return NOMI_SP[k]; if (t === 'rv') return 'Idea da costruire'; return NOMI_ED[DECO[+k].n] || DECO[+k].n; }
 function entAt(x, y) {
@@ -1168,7 +1178,19 @@ function entAt(x, y) {
   const hits = ray.intersectObjects(SPRITES.filter(o => o.visible && o.userData.ent), false);
   if (hits.length) return hits[0].object.userData.ent;
   const h = hexAt(x, y); return h ? entAtHex(h) : null; }
-const freeHex = (h, except) => LAND.has(K(...h)) && !ROADT.has(K(...h)) && (() => { const e = entAtHex(h); return !e || e === except; })();
+const freeOne = (h, except) => LAND.has(K(...h)) && !ROADT.has(K(...h)) && !entAtHex(h, except);
+// libera = tutte le tessere che l'oggetto occuperebbe (con il suo raggio) sono terra, senza strade e senza altri oggetti
+const freeHex = (h, except, rg) => { if (rg === undefined) rg = except ? raggioDi(except) : 0;
+  return tessereDi(h, rg).every(t => LAND.has(K(...t)) && !ROADT.has(K(...t))) && !tuttiEnt().some(e => e !== except && HD(entHex(e), h) <= raggioDi(e) + rg); };
+const tuttiEnt = () => [...ORDER.map(k => 'ag:' + k), 'sp:cantiere', 'sp:udienze', 'sp:pozzo', ...ROVINE_HEX.map((h, i) => 'rv:' + i), ...DECO.map((d, i) => 'dc:' + i)];
+// mappe salvate prima della scala nuova: chi si sovrappone viene spostato sulla prima zona libera più vicina
+function sistemaSovrapposti() { let n = 0; const fatti = [];
+  tuttiEnt().forEach(id => { const h = entHex(id), rg = raggioDi(id);
+    const libero = (c) => tessereDi(c, rg).every(t => LAND.has(K(...t))) && fatti.every(e => HD(entHex(e), c) > raggioDi(e) + rg);
+    if (!libero(h)) { let best = null; for (let d = 1; d <= 14 && !best; d++) for (const c of tessereDi(h, d)) if (HD(c, h) === d && libero(c)) { best = c; break; }
+      if (best) { moveEnt(id, best); n++; } }
+    fatti.push(id); });
+  return n; }
 
 /* ---- evidenziazioni ---- */
 function hexMark(color, op) { const g = new THREE.RingGeometry(.92, 1.12, 6, 1, Math.PI / 6); g.rotateX(-Math.PI / 2);
@@ -1181,7 +1203,7 @@ function clearStrokeMarks() { MARKS.forEach(m => { m.visible = false; }); }
 
 /* ---- azioni ---- */
 function moveEnt(id, h) { const [t, k] = id.split(':');
-  if (t === 'ag') AG[k].hex = [...h]; else if (t === 'rv') setHex(ROVINE_HEX[+k], h); else if (t === 'dc') { DECO[+k].q = h[0]; DECO[+k].r = h[1]; DECO[+k].o.position.set(W(...h).x, .02, W(...h).z); }
+  if (t === 'ag') AG[k].hex = [...h]; else if (t === 'rv') setHex(ROVINE_HEX[+k], h); else if (t === 'dc') { DECO[+k].q = h[0]; DECO[+k].r = h[1]; if (DECO[+k].o) DECO[+k].o.position.set(W(...h).x, .02, W(...h).z); }
   else setHex(entHex(id), h); }
 function ruota() { const id = ED.sel; if (!id) return; snapshot(); const [t, k] = id.split(':');
   if (t === 'ag') AG[k].rot = ((AG[k].rot || 0) + 1) % 4; else if (t === 'dc') DECO[+k].rot = ((DECO[+k].rot || 0) + 1) % 4; else if (k === 'cantiere') D.rotCant = ((D.rotCant || 0) + 1) % 4;
@@ -1196,7 +1218,7 @@ function paint(h) { const key = K(...h), st = ED.stroke; if (st.done.has(key)) r
     if (LAND.size <= 7) return; if (e) { removeSprite(DECO[+e.slice(3)].o); DECO.splice(+e.slice(3), 1); st.deco = true; } LAND.delete(key); ROADT.delete(key); st.ch = true; strokeMark(h, 0xff6a5a); }
   else if (ED.tool === 'strada') { if (!LAND.has(key)) return; if (st.mode === undefined) st.mode = !ROADT.has(key);
     const e = entAtHex(h); if (st.mode) { if (e && e.startsWith('dc:')) { removeSprite(DECO[+e.slice(3)].o); DECO.splice(+e.slice(3), 1); st.deco = true; } ROADT.add(key); } else ROADT.delete(key); st.ch = true; strokeMark(h, 0xe0b070); }
-  else if (ED.tool === 'metti') { if (!freeHex(h)) return; const n = ED.item; DECO.push({ n, w: n === 'montagna' || n === 'zucchero' ? 2.9 : n === 'rupe' ? 2.5 : n === 'scogli' ? 1.7 : n === 'fontana' ? 1.9 : CASE.has(n) && n !== 'fattoria' ? 2.15 : 2.3, q: h[0], r: h[1], rot: 0 }); st.ch = true; st.deco = true; strokeMark(h, 0x9fe8ff); }
+  else if (ED.tool === 'metti') { if (!freeHex(h, null, RAGGIO[ED.item] || 0)) return; const n = ED.item; DECO.push({ n, w: n === 'montagna' || n === 'zucchero' ? 2.9 : n === 'rupe' ? 2.5 : n === 'scogli' ? 1.7 : n === 'fontana' ? 1.9 : CASE.has(n) && n !== 'fattoria' ? 2.15 : 2.3, q: h[0], r: h[1], rot: 0 }); st.ch = true; st.deco = true; strokeMark(h, 0x9fe8ff); }
 }
 function endStroke() { const st = ED.stroke; ED.stroke = null; clearStrokeMarks(); if (!st) return;
   if (!st.ch) { ED.undo.pop(); edButtons(); return; }
@@ -1208,14 +1230,14 @@ function edDown(x, y) { edInitMarks();
   if (ED.tool === 'sel') { const id = entAt(x, y); if (!id) return false; ED.sel = id; edSelShow(); ED.drag = { id, from: [...entHex(id)], to: null }; return true; }
   const h = hexAt(x, y); if (!h) return false; snapshot(); ED.stroke = { done: new Set(), ch: false }; paint(h); return true; }
 function edMove(x, y) { const h = hexAt(x, y); if (!h) return;
-  if (ED.drag) { const ok = freeHex(h, ED.drag.id); ED.drag.to = ok ? h : null; showMark(MK.hov, h, ok ? 0x7dff8a : 0xff6a5a); return; }
+  if (ED.drag) { const ok = freeHex(h, ED.drag.id); ED.drag.to = ok ? h : null; clearStrokeMarks(); MK.hov.visible = false; tessereDi(h, raggioDi(ED.drag.id)).forEach(t => strokeMark(t, ok ? 0x7dff8a : 0xff6a5a)); return; }
   if (ED.stroke) paint(h); }
 function edUp() {
-  if (ED.drag) { const dr = ED.drag; ED.drag = null; MK.hov.visible = false;
+  if (ED.drag) { const dr = ED.drag; ED.drag = null; MK.hov.visible = false; clearStrokeMarks();
     if (dr.to && K(...dr.to) !== K(...dr.from)) { snapshot(); moveEnt(dr.id, dr.to); refresh(dr.id.startsWith('dc:')); } return; }
   if (ED.stroke) endStroke(); }
-function edSelShow() { if (!MK) return; if (!ED.sel) { MK.sel.visible = false; $('ed-info').textContent = ED.tool === 'sel' ? 'Tocca un elemento per selezionarlo, trascinalo per spostarlo' : $('ed-info').textContent; edButtons(); return; }
-  showMark(MK.sel, entHex(ED.sel)); $('ed-info').textContent = entName(ED.sel); edButtons(); }
+function edSelShow() { if (!MK) return; if (!ED.sel) { MK.sel.visible = false; clearStrokeMarks(); $('ed-info').textContent = ED.tool === 'sel' ? 'Tocca un elemento per selezionarlo, trascinalo per spostarlo' : $('ed-info').textContent; edButtons(); return; }
+  clearStrokeMarks(); if (!ED.drag) tessereDi(entHex(ED.sel), raggioDi(ED.sel)).forEach(t => strokeMark(t, 0xffc35a)); MK.sel.visible = false; $('ed-info').textContent = entName(ED.sel); edButtons(); }
 function edButtons() { const t = ED.sel && ED.sel.split(':')[0];
   $('ed-rot').disabled = !ED.sel || ED.sel === 'sp:udienze' || ED.sel === 'sp:pozzo' || t === 'rv'; $('ed-del').disabled = t !== 'dc';
   $('ed-undo').disabled = !ED.undo.length; $('ed-redo').disabled = !ED.redo.length; }
