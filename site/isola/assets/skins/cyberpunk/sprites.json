@@ -3,73 +3,73 @@
   "w": 518,
   "h": 491,
   "alpha": true,
-  "kb": 78
+  "kb": 69
  },
  "castello_N": {
   "w": 514,
   "h": 486,
   "alpha": true,
-  "kb": 77
+  "kb": 69
  },
  "castello_O": {
   "w": 528,
   "h": 500,
   "alpha": true,
-  "kb": 91
+  "kb": 81
  },
  "castello_S": {
   "w": 531,
   "h": 500,
   "alpha": true,
-  "kb": 92
+  "kb": 84
  },
  "mercato_E": {
   "w": 526,
   "h": 490,
   "alpha": true,
-  "kb": 101
+  "kb": 87
  },
  "mercato_N": {
   "w": 524,
   "h": 477,
   "alpha": true,
-  "kb": 102
+  "kb": 87
  },
  "mercato_O": {
   "w": 540,
   "h": 505,
   "alpha": true,
-  "kb": 106
+  "kb": 91
  },
  "mercato_S": {
   "w": 536,
   "h": 492,
   "alpha": true,
-  "kb": 112
+  "kb": 96
  },
  "mulino_E": {
   "w": 525,
   "h": 490,
   "alpha": true,
-  "kb": 83
+  "kb": 74
  },
  "mulino_N": {
   "w": 519,
   "h": 492,
   "alpha": true,
-  "kb": 85
+  "kb": 77
  },
  "mulino_O": {
   "w": 534,
   "h": 500,
   "alpha": true,
-  "kb": 97
+  "kb": 88
  },
  "mulino_S": {
   "w": 534,
   "h": 504,
   "alpha": true,
-  "kb": 94
+  "kb": 86
  },
  "taverna_E": {
   "w": 503,
@@ -153,126 +153,390 @@
   "w": 517,
   "h": 446,
   "alpha": true,
-  "kb": 81
+  "kb": 74
  },
  "cantiere_2": {
   "w": 503,
   "h": 445,
   "alpha": true,
-  "kb": 81
+  "kb": 73
  },
  "cantiere_3": {
   "w": 454,
   "h": 456,
   "alpha": true,
-  "kb": 76
+  "kb": 69
  },
  "casa_a": {
   "w": 463,
   "h": 438,
   "alpha": true,
-  "kb": 64
+  "kb": 56
  },
  "casa_b": {
   "w": 509,
   "h": 435,
   "alpha": true,
-  "kb": 75
+  "kb": 66
  },
  "cipressi": {
   "w": 500,
   "h": 446,
   "alpha": true,
-  "kb": 78
+  "kb": 69
  },
  "fattoria": {
   "w": 513,
   "h": 422,
   "alpha": true,
-  "kb": 99
+  "kb": 80
  },
  "fontana": {
   "w": 517,
   "h": 426,
   "alpha": true,
-  "kb": 86
+  "kb": 75
  },
  "grano": {
   "w": 513,
   "h": 437,
   "alpha": true,
-  "kb": 102
+  "kb": 79
  },
  "montagna": {
   "w": 508,
   "h": 439,
   "alpha": true,
-  "kb": 74
+  "kb": 70
  },
  "pineta": {
   "w": 510,
   "h": 437,
   "alpha": true,
-  "kb": 93
+  "kb": 84
  },
  "pozzo": {
   "w": 482,
   "h": 436,
   "alpha": true,
-  "kb": 75
+  "kb": 65
  },
  "rovina": {
   "w": 506,
   "h": 447,
   "alpha": true,
-  "kb": 81
+  "kb": 74
  },
  "rupe": {
   "w": 507,
   "h": 453,
   "alpha": true,
-  "kb": 84
+  "kb": 75
  },
  "scogli": {
   "w": 513,
   "h": 394,
   "alpha": true,
-  "kb": 77
+  "kb": 71
  },
  "tempio_E": {
   "w": 509,
   "h": 431,
   "alpha": true,
-  "kb": 74
+  "kb": 60
  },
  "tempio_O": {
   "w": 507,
   "h": 435,
   "alpha": true,
-  "kb": 77
+  "kb": 63
  },
  "tempio_S": {
   "w": 544,
   "h": 440,
   "alpha": true,
-  "kb": 93
+  "kb": 76
  },
  "tenda": {
   "w": 508,
   "h": 436,
   "alpha": true,
-  "kb": 77
+  "kb": 67
  },
  "uliveto": {
   "w": 512,
   "h": 413,
   "alpha": true,
-  "kb": 92
+  "kb": 86
  },
  "vigneto": {
   "w": 516,
   "h": 434,
   "alpha": true,
-  "kb": 79
+  "kb": 72
+ },
+ "animale_B1": {
+  "w": 257,
+  "h": 315,
+  "alpha": true,
+  "kb": 19
+ },
+ "animale_B2": {
+  "w": 214,
+  "h": 315,
+  "alpha": true,
+  "kb": 17
+ },
+ "animale_B3": {
+  "w": 289,
+  "h": 315,
+  "alpha": true,
+  "kb": 18
+ },
+ "animale_B4": {
+  "w": 227,
+  "h": 315,
+  "alpha": true,
+  "kb": 18
+ },
+ "animale_F1": {
+  "w": 177,
+  "h": 246,
+  "alpha": true,
+  "kb": 14
+ },
+ "animale_F2": {
+  "w": 201,
+  "h": 246,
+  "alpha": true,
+  "kb": 12
+ },
+ "animale_F3": {
+  "w": 179,
+  "h": 246,
+  "alpha": true,
+  "kb": 13
+ },
+ "animale_F4": {
+  "w": 167,
+  "h": 246,
+  "alpha": true,
+  "kb": 13
+ },
+ "guardia_B1": {
+  "w": 194,
+  "h": 378,
+  "alpha": true,
+  "kb": 20
+ },
+ "guardia_B2": {
+  "w": 196,
+  "h": 378,
+  "alpha": true,
+  "kb": 18
+ },
+ "guardia_B3": {
+  "w": 190,
+  "h": 378,
+  "alpha": true,
+  "kb": 20
+ },
+ "guardia_B4": {
+  "w": 199,
+  "h": 378,
+  "alpha": true,
+  "kb": 18
+ },
+ "guardia_F1": {
+  "w": 188,
+  "h": 384,
+  "alpha": true,
+  "kb": 21
+ },
+ "guardia_F2": {
+  "w": 165,
+  "h": 384,
+  "alpha": true,
+  "kb": 19
+ },
+ "guardia_F3": {
+  "w": 188,
+  "h": 384,
+  "alpha": true,
+  "kb": 21
+ },
+ "guardia_F4": {
+  "w": 164,
+  "h": 384,
+  "alpha": true,
+  "kb": 19
+ },
+ "messaggero_B1": {
+  "w": 187,
+  "h": 361,
+  "alpha": true,
+  "kb": 19
+ },
+ "messaggero_B2": {
+  "w": 188,
+  "h": 361,
+  "alpha": true,
+  "kb": 20
+ },
+ "messaggero_B3": {
+  "w": 190,
+  "h": 361,
+  "alpha": true,
+  "kb": 19
+ },
+ "messaggero_B4": {
+  "w": 208,
+  "h": 361,
+  "alpha": true,
+  "kb": 19
+ },
+ "messaggero_F1": {
+  "w": 209,
+  "h": 359,
+  "alpha": true,
+  "kb": 21
+ },
+ "messaggero_F2": {
+  "w": 188,
+  "h": 359,
+  "alpha": true,
+  "kb": 19
+ },
+ "messaggero_F3": {
+  "w": 211,
+  "h": 359,
+  "alpha": true,
+  "kb": 20
+ },
+ "messaggero_F4": {
+  "w": 178,
+  "h": 359,
+  "alpha": true,
+  "kb": 18
+ },
+ "minaccia_1": {
+  "w": 214,
+  "h": 353,
+  "alpha": true,
+  "kb": 15
+ },
+ "minaccia_2": {
+  "w": 249,
+  "h": 353,
+  "alpha": true,
+  "kb": 13
+ },
+ "minaccia_3": {
+  "w": 273,
+  "h": 353,
+  "alpha": true,
+  "kb": 14
+ },
+ "minaccia_4": {
+  "w": 260,
+  "h": 353,
+  "alpha": true,
+  "kb": 13
+ },
+ "omino_a_B1": {
+  "w": 189,
+  "h": 394,
+  "alpha": true,
+  "kb": 19
+ },
+ "omino_a_B2": {
+  "w": 173,
+  "h": 394,
+  "alpha": true,
+  "kb": 18
+ },
+ "omino_a_B3": {
+  "w": 192,
+  "h": 394,
+  "alpha": true,
+  "kb": 18
+ },
+ "omino_a_B4": {
+  "w": 173,
+  "h": 394,
+  "alpha": true,
+  "kb": 17
+ },
+ "omino_a_F1": {
+  "w": 181,
+  "h": 400,
+  "alpha": true,
+  "kb": 21
+ },
+ "omino_a_F2": {
+  "w": 164,
+  "h": 400,
+  "alpha": true,
+  "kb": 18
+ },
+ "omino_a_F3": {
+  "w": 190,
+  "h": 400,
+  "alpha": true,
+  "kb": 21
+ },
+ "omino_a_F4": {
+  "w": 181,
+  "h": 400,
+  "alpha": true,
+  "kb": 18
+ },
+ "omino_b_B1": {
+  "w": 186,
+  "h": 375,
+  "alpha": true,
+  "kb": 15
+ },
+ "omino_b_B2": {
+  "w": 191,
+  "h": 375,
+  "alpha": true,
+  "kb": 14
+ },
+ "omino_b_B3": {
+  "w": 176,
+  "h": 375,
+  "alpha": true,
+  "kb": 15
+ },
+ "omino_b_B4": {
+  "w": 170,
+  "h": 375,
+  "alpha": true,
+  "kb": 14
+ },
+ "omino_b_F1": {
+  "w": 178,
+  "h": 369,
+  "alpha": true,
+  "kb": 20
+ },
+ "omino_b_F2": {
+  "w": 191,
+  "h": 369,
+  "alpha": true,
+  "kb": 18
+ },
+ "omino_b_F3": {
+  "w": 189,
+  "h": 369,
+  "alpha": true,
+  "kb": 21
+ },
+ "omino_b_F4": {
+  "w": 170,
+  "h": 369,
+  "alpha": true,
+  "kb": 17
  }
 }
