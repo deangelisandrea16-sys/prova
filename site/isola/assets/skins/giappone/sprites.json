@@ -466,5 +466,77 @@
   "h": 400,
   "alpha": true,
   "kb": 17
+ },
+ "animale_B1": {
+  "w": 233,
+  "h": 400,
+  "alpha": true,
+  "kb": 20
+ },
+ "animale_B2": {
+  "w": 225,
+  "h": 400,
+  "alpha": true,
+  "kb": 19
+ },
+ "animale_B3": {
+  "w": 233,
+  "h": 400,
+  "alpha": true,
+  "kb": 20
+ },
+ "animale_B4": {
+  "w": 227,
+  "h": 400,
+  "alpha": true,
+  "kb": 19
+ },
+ "animale_F1": {
+  "w": 271,
+  "h": 376,
+  "alpha": true,
+  "kb": 14
+ },
+ "animale_F2": {
+  "w": 264,
+  "h": 376,
+  "alpha": true,
+  "kb": 14
+ },
+ "animale_F3": {
+  "w": 271,
+  "h": 376,
+  "alpha": true,
+  "kb": 14
+ },
+ "animale_F4": {
+  "w": 271,
+  "h": 376,
+  "alpha": true,
+  "kb": 14
+ },
+ "minaccia_1": {
+  "w": 400,
+  "h": 202,
+  "alpha": true,
+  "kb": 15
+ },
+ "minaccia_2": {
+  "w": 400,
+  "h": 195,
+  "alpha": true,
+  "kb": 13
+ },
+ "minaccia_3": {
+  "w": 400,
+  "h": 169,
+  "alpha": true,
+  "kb": 11
+ },
+ "minaccia_4": {
+  "w": 400,
+  "h": 172,
+  "alpha": true,
+  "kb": 12
  }
 }
