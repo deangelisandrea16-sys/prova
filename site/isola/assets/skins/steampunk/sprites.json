@@ -1,0 +1,242 @@
+{
+ "cantiere_1": {
+  "w": 533,
+  "h": 484,
+  "alpha": true,
+  "kb": 72
+ },
+ "cantiere_2": {
+  "w": 532,
+  "h": 491,
+  "alpha": true,
+  "kb": 91
+ },
+ "cantiere_3": {
+  "w": 496,
+  "h": 495,
+  "alpha": true,
+  "kb": 82
+ },
+ "casa_a": {
+  "w": 418,
+  "h": 488,
+  "alpha": true,
+  "kb": 56
+ },
+ "casa_b": {
+  "w": 491,
+  "h": 482,
+  "alpha": true,
+  "kb": 60
+ },
+ "castello_E": {
+  "w": 502,
+  "h": 483,
+  "alpha": true,
+  "kb": 79
+ },
+ "castello_N": {
+  "w": 502,
+  "h": 486,
+  "alpha": true,
+  "kb": 77
+ },
+ "castello_O": {
+  "w": 512,
+  "h": 489,
+  "alpha": true,
+  "kb": 70
+ },
+ "castello_S": {
+  "w": 495,
+  "h": 472,
+  "alpha": true,
+  "kb": 69
+ },
+ "cipressi": {
+  "w": 517,
+  "h": 489,
+  "alpha": true,
+  "kb": 102
+ },
+ "fontana": {
+  "w": 507,
+  "h": 482,
+  "alpha": true,
+  "kb": 75
+ },
+ "mercato_E": {
+  "w": 527,
+  "h": 472,
+  "alpha": true,
+  "kb": 84
+ },
+ "mercato_N": {
+  "w": 528,
+  "h": 472,
+  "alpha": true,
+  "kb": 82
+ },
+ "mercato_O": {
+  "w": 534,
+  "h": 466,
+  "alpha": true,
+  "kb": 82
+ },
+ "mercato_S": {
+  "w": 527,
+  "h": 468,
+  "alpha": true,
+  "kb": 81
+ },
+ "mulino_E": {
+  "w": 507,
+  "h": 477,
+  "alpha": true,
+  "kb": 80
+ },
+ "mulino_N": {
+  "w": 492,
+  "h": 471,
+  "alpha": true,
+  "kb": 76
+ },
+ "mulino_O": {
+  "w": 513,
+  "h": 484,
+  "alpha": true,
+  "kb": 79
+ },
+ "mulino_S": {
+  "w": 515,
+  "h": 475,
+  "alpha": true,
+  "kb": 74
+ },
+ "pineta": {
+  "w": 518,
+  "h": 471,
+  "alpha": true,
+  "kb": 102
+ },
+ "pozzo": {
+  "w": 462,
+  "h": 490,
+  "alpha": true,
+  "kb": 78
+ },
+ "rovina": {
+  "w": 525,
+  "h": 487,
+  "alpha": true,
+  "kb": 80
+ },
+ "taverna_E": {
+  "w": 510,
+  "h": 478,
+  "alpha": true,
+  "kb": 74
+ },
+ "taverna_N": {
+  "w": 509,
+  "h": 479,
+  "alpha": true,
+  "kb": 76
+ },
+ "taverna_O": {
+  "w": 528,
+  "h": 481,
+  "alpha": true,
+  "kb": 72
+ },
+ "taverna_S": {
+  "w": 520,
+  "h": 479,
+  "alpha": true,
+  "kb": 73
+ },
+ "tempio_E": {
+  "w": 515,
+  "h": 474,
+  "alpha": true,
+  "kb": 79
+ },
+ "tempio_N": {
+  "w": 530,
+  "h": 485,
+  "alpha": true,
+  "kb": 83
+ },
+ "tempio_O": {
+  "w": 515,
+  "h": 493,
+  "alpha": true,
+  "kb": 78
+ },
+ "tempio_S": {
+  "w": 526,
+  "h": 495,
+  "alpha": true,
+  "kb": 77
+ },
+ "tenda": {
+  "w": 525,
+  "h": 469,
+  "alpha": true,
+  "kb": 68
+ },
+ "tesoro_E": {
+  "w": 519,
+  "h": 482,
+  "alpha": true,
+  "kb": 78
+ },
+ "tesoro_N": {
+  "w": 529,
+  "h": 479,
+  "alpha": true,
+  "kb": 80
+ },
+ "tesoro_O": {
+  "w": 516,
+  "h": 480,
+  "alpha": true,
+  "kb": 77
+ },
+ "tesoro_S": {
+  "w": 527,
+  "h": 481,
+  "alpha": true,
+  "kb": 77
+ },
+ "torre_E": {
+  "w": 310,
+  "h": 498,
+  "alpha": true,
+  "kb": 52
+ },
+ "torre_N": {
+  "w": 319,
+  "h": 499,
+  "alpha": true,
+  "kb": 54
+ },
+ "torre_O": {
+  "w": 327,
+  "h": 494,
+  "alpha": true,
+  "kb": 51
+ },
+ "torre_S": {
+  "w": 330,
+  "h": 495,
+  "alpha": true,
+  "kb": 53
+ },
+ "uliveto": {
+  "w": 519,
+  "h": 470,
+  "alpha": true,
+  "kb": 101
+ }
+}
