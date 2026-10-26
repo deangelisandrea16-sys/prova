@@ -91,7 +91,13 @@ for (let q = -16; q <= 16; q++) for (let r = -16; r <= 16; r++) {
 }
 const isLand = (q, r) => LAND.has(K(q, r));
 /* ---- mappa modificata con l'editor (salvata su questo dispositivo) ---- */
-const MAPPA_KEY = 'regno-mappa-v2'; // v2: isola grande e vuota, da riempire con l'editor
+// regni salvati su questo dispositivo: ognuno ha un nome e la sua mappa (chiave 'regno-mappa-v2:<id>')
+const REGNI_KEY = 'regno-elenco-v1';
+let REGNI = (() => { try { const r = JSON.parse(localStorage.getItem(REGNI_KEY) || 'null'); if (r && Array.isArray(r.lista) && r.lista.length) return r; } catch (e) {} return { attivo: 'r1', lista: [{ id: 'r1', nome: 'Regno di Sire' }] }; })();
+if (!REGNI.lista.some(r => r.id === REGNI.attivo)) REGNI.attivo = REGNI.lista[0].id;
+const salvaRegni = () => { try { localStorage.setItem(REGNI_KEY, JSON.stringify(REGNI)); } catch (e) {} };
+// il primo regno usa la chiave di prima, così la mappa già fatta resta
+const MAPPA_KEY = REGNI.attivo === 'r1' ? 'regno-mappa-v2' : 'regno-mappa-v2:' + REGNI.attivo;
 let MAPPA = null;
 try { MAPPA = JSON.parse(localStorage.getItem(MAPPA_KEY) || 'null'); if (!MAPPA || MAPPA.v !== 1 || !Array.isArray(MAPPA.land) || MAPPA.land.length < 7) MAPPA = null; } catch (e) { MAPPA = null; }
 const setHex = (dst, src) => { if (Array.isArray(src)) { dst[0] = +src[0]; dst[1] = +src[1]; } };
@@ -911,7 +917,7 @@ function toast(t, sec) { const el = $('toast'); el.textContent = t; el.hidden = 
 const sheet = $('sheet'); let openSheet = null;
 function syncPad() { $('pad').hidden = !sheet.hidden && innerWidth < 760; }
 function setSheet(name, html, btn) {
-  ['n-list', 'n-ev', 'n-info', 'n-skin'].forEach(id => $(id).setAttribute('aria-pressed', 'false'));
+  ['n-list', 'n-ev', 'n-info', 'n-skin', 'ed-regni'].forEach(id => $(id).setAttribute('aria-pressed', 'false'));
   if (!name || openSheet === name) { sheet.hidden = true; openSheet = null; syncPad(); return; }
   openSheet = name; sheet.innerHTML = html; sheet.hidden = false; if (btn) $(btn).setAttribute('aria-pressed', 'true'); syncPad();
 }
@@ -961,7 +967,7 @@ $('n-info').onclick = () => setSheet('info', `<h2>Come leggere il regno</h2>
   <p><b>Skin del regno:</b></p><div class="skins">${Object.entries(SKINS).filter(([, v]) => v.pronta !== false).map(([k, v]) => `<button class="act skin-btn" data-skin="${k}" aria-pressed="${k === SKIN_ID}">${esc(v.nome)}${k === SKIN_ID ? '<small>in uso</small>' : ''}</button>`).join('')}</div>
   <button class="act" id="q-btn">Qualità grafica: ${S.quality}<small>Abbassala se il telefono scalda</small></button>
   <p id="fps-line">Misuro i fotogrammi…</p><p><small>Modelli KayKit di Kay Lousberg e animali di Quaternius (CC0). Dati [PROVA].</small></p>`, 'n-info');
-$('n-skin').onclick = () => setSheet('skin', `<h2>Skin del regno</h2><p>Scegli lo stile dell'isola. La pagina si ricarica con la nuova skin.</p><div class="skins">${Object.entries(SKINS).filter(([, v]) => v.pronta !== false).map(([k, v]) => `<button class="act skin-btn" data-skin="${k}" aria-pressed="${k === SKIN_ID}">${esc(v.nome)}${k === SKIN_ID ? '<small>in uso</small>' : ''}</button>`).join('')}</div>`, 'n-skin');
+$('n-skin').onclick = () => setSheet('skin', `<h2>Skin del regno</h2><p>Scegli lo stile dell'isola. La pagina si ricarica con la nuova skin.</p><div class="skins">${Object.entries(SKINS).filter(([, v]) => v.pronta !== false).map(([k, v]) => `<button class="act skin-btn" data-skin="${k}" aria-pressed="${k === SKIN_ID}">${esc(v.nome)}${k === SKIN_ID ? '<small>in uso</small>' : ''}</button>`).join('')}</div><p><b>Regno aperto:</b> ${esc(regnoNome())}</p><button class="act" id="skin-regni">I tuoi regni<small>Apri, crea o rinomina un'isola</small></button>`, 'n-skin');
 $('n-snd').onclick = () => { AUDIO.set(!S.suoni); $('n-snd').setAttribute('aria-pressed', String(S.suoni)); $('snd-w').setAttribute('opacity', S.suoni ? '1' : '.3'); $('snd-lbl').textContent = S.suoni ? 'Suoni sì' : 'Suoni'; if (S.suoni) AUDIO.fanfare(); };
 $('rot-l').onclick = () => rotate(-1); $('rot-r').onclick = () => rotate(1);
 $('zoom-in').onclick = () => zoomBy(1.3); $('zoom-out').onclick = () => zoomBy(1 / 1.3);
@@ -1092,7 +1098,8 @@ function loop(t) {
   clouds.forEach(c => { c.userData.a += dt * c.userData.v * .02; c.position.x = Math.cos(c.userData.a) * c.userData.r; c.position.z = Math.sin(c.userData.a) * c.userData.r; });
   BIRDS.forEach(b => { const u = b.userData; u.a += dt * .18; const a = u.a + u.ph * .25; b.position.set(Math.cos(a) * u.r + 2, u.h + Math.sin(time * 2 + u.ph) * .2, Math.sin(a) * u.r); b.rotation.y = -a; b.scale.y = .4 + Math.abs(Math.sin(time * 8 + u.ph)) * .9; });
   if (D.dragon) { const g = D.dragon; g.mixer.update(dt); g.a += dt * .6; const c = AG.fatture.pos, r = 2.2 + (1 - g.k) * 22, h = 3.6 + (1 - g.k) * 8;
-    g.o.position.set(c.x + Math.cos(g.a) * r, h + Math.sin(time * 1.3) * .3, c.z + Math.sin(g.a) * r); if (!g.o.isSprite) g.o.rotation.y = -g.a; }
+    g.o.position.set(c.x + Math.cos(g.a) * r, h + Math.sin(time * 1.3) * .3, c.z + Math.sin(g.a) * r); if (!g.o.isSprite) g.o.rotation.y = -g.a;
+    else { _sa.copy(g.o.position).project(camera); if (g.px !== undefined) { const dx = _sa.x - g.px; if (Math.abs(dx) > 1e-5) g.o.material.userData.u.uFlip.value = dx < 0 ? 1 : 0; } g.px = _sa.x; } } // il drago dipinto guarda dove vola
   ORDER.forEach(k => { const a = AG[k]; a.ring.material.opacity = a.stato === 'bloccato' ? .55 + .45 * Math.sin(time * 4) : .9; });
   SKYCLOUDS.forEach(c => { c.userData.a += dt * c.userData.v; c.position.x = Math.cos(c.userData.a) * c.userData.d; c.position.z = Math.sin(c.userData.a) * c.userData.d; });
   stepPeople(dt);
@@ -1215,7 +1222,25 @@ function editor(on) {
 }
 function esporta() { const b = new Blob([JSON.stringify(mapNow(), null, 1)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'mappa-isola-sire.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
 function importa(file) { const r = new FileReader(); r.onload = () => { try { const m = JSON.parse(r.result); if (m.v !== 1 || !Array.isArray(m.land) || m.land.length < 7 || !m.agenti || !m.spec || !Array.isArray(m.deco)) throw 0; snapshot(); applyMap(m); toast('Mappa importata'); } catch (e) { toast('File non valido: serve una mappa esportata da qui'); } }; r.readAsText(file); }
-function originale() { if (!confirmaOriginale) { confirmaOriginale = true; $('ed-orig').textContent = 'Tocca ancora per confermare'; setTimeout(() => { confirmaOriginale = false; $('ed-orig').textContent = 'Isola originale'; }, 3500); return; }
+function regnoNome() { const r = REGNI.lista.find(x => x.id === REGNI.attivo); return r ? r.nome : 'Regno'; }
+function apriRegni() {
+  setSheet('regni', `<h2>I tuoi regni</h2><p>Ogni regno ha la sua isola. Si salvano su questo dispositivo.</p>
+    <ul class="list">${REGNI.lista.map(r => `<li><button type="button" class="regno-btn" data-id="${r.id}" aria-pressed="${r.id === REGNI.attivo}"><span>${esc(r.nome)}</span><small>${r.id === REGNI.attivo ? 'aperto ora' : 'apri'}</small></button></li>`).join('')}</ul>
+    <button class="act" id="regno-nuovo">Nuovo regno<small>Un'isola vuota con solo gli edifici principali</small></button>
+    <button class="act" id="regno-rinomina">Rinomina "${esc(regnoNome())}"</button>
+    ${REGNI.lista.length > 1 ? `<button class="act" id="regno-elimina">Elimina "${esc(regnoNome())}"<small>Tocca due volte per confermare</small></button>` : ''}`, 'ed-regni');
+}
+function nuovoNome(def) { const n = (prompt('Nome del regno', def) || '').trim().slice(0, 40); return n; }
+document.addEventListener('click', e => {
+  if (e.target.closest('#skin-regni')) { setSheet(null); apriRegni(); return; }
+  const b = e.target.closest('.regno-btn'); if (b) { if (b.dataset.id !== REGNI.attivo) { REGNI.attivo = b.dataset.id; salvaRegni(); location.reload(); } return; }
+  if (e.target.closest('#regno-nuovo')) { const nome = nuovoNome('Nuovo regno ' + (REGNI.lista.length + 1)); if (!nome) return;
+    const id = 'r' + Date.now().toString(36); REGNI.lista.push({ id, nome }); REGNI.attivo = id; salvaRegni(); location.reload(); return; }
+  if (e.target.closest('#regno-rinomina')) { const r = REGNI.lista.find(x => x.id === REGNI.attivo); const nome = nuovoNome(r.nome); if (!nome) return; r.nome = nome; salvaRegni(); apriRegni(); apriRegni(); toast('Regno rinominato'); return; }
+  const del = e.target.closest('#regno-elimina'); if (del) { if (!del.dataset.ok) { del.dataset.ok = '1'; del.firstChild.textContent = 'Tocca ancora per eliminare'; return; }
+    try { localStorage.removeItem(MAPPA_KEY); } catch (er) {} REGNI.lista = REGNI.lista.filter(x => x.id !== REGNI.attivo); REGNI.attivo = REGNI.lista[0].id; salvaRegni(); location.reload(); }
+});
+function originale() { if (!confirmaOriginale) { confirmaOriginale = true; $('ed-orig').textContent = 'Tocca ancora per confermare'; setTimeout(() => { confirmaOriginale = false; $('ed-orig').textContent = 'Svuota questo regno'; }, 3500); return; }
   try { localStorage.removeItem(MAPPA_KEY); } catch (e) { /* niente memoria: basta ricaricare */ } location.reload(); }
 let confirmaOriginale = false;
 $('ed-btn').onclick = () => editor(!ED.on);
@@ -1225,6 +1250,7 @@ $('ed-cat').addEventListener('click', e => { const b = e.target.closest('button[
 $('ed-rot').onclick = ruota; $('ed-del').onclick = elimina; $('ed-undo').onclick = annulla; $('ed-redo').onclick = ripristina;
 $('ed-exp').onclick = esporta; $('ed-imp').onclick = () => $('ed-file').click(); $('ed-file').onchange = e => { if (e.target.files[0]) importa(e.target.files[0]); e.target.value = ''; };
 $('ed-orig').onclick = originale;
+$('ed-regni').onclick = () => { editor(false); apriRegni(); };
 addEventListener('keydown', e => { if (!ED.on || (e.target.closest && e.target.closest('input,textarea'))) return;
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? ripristina() : annulla(); }
   else if (e.key === 'Delete' || e.key === 'Backspace') elimina(); else if (e.key === 'r' || e.key === 'R') ruota(); });
