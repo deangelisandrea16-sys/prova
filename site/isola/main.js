@@ -43,7 +43,7 @@ const SKINS = {
   mediterraneo: { nome: 'Mediterraneo', dir: 'assets/sprites/', grass: 'assets/grass.jpg', dirt: 'assets/dirt.jpg', rock: 'assets/roccia.jpg',
     sky: ['#3f86c4', '#7cbde6', '#bfe3f7'], t0: [.62, .66, .4], t1: [.86, .84, .56] },
   // SKIN-AUTO-INIZIO (righe scritte dallo script di integrazione)
-  ...Object.fromEntries(Object.entries(/*SKINDATA*/{"vichinghi": {"nome": "Vichinghi", "sky": ["#2e5378", "#7298bd", "#dbe7f1"], "t0": [0.62, 0.7, 0.7], "t1": [0.8, 0.86, 0.86], "pronta": true}, "cyberpunk": {"nome": "Cyberpunk", "sky": ["#120b2e", "#3b1f72", "#d9508f"], "t0": [0.9, 0.9, 0.95], "t1": [1.05, 1.05, 1.1], "pronta": true}}/*FINE*/)
+  ...Object.fromEntries(Object.entries(/*SKINDATA*/{"vichinghi": {"nome": "Vichinghi", "sky": ["#2e5378", "#7298bd", "#dbe7f1"], "t0": [0.62, 0.7, 0.7], "t1": [0.8, 0.86, 0.86], "pronta": true}, "cyberpunk": {"nome": "Cyberpunk", "sky": ["#120b2e", "#3b1f72", "#d9508f"], "t0": [0.9, 0.9, 0.95], "t1": [1.05, 1.05, 1.1], "pronta": true}, "steampunk": {"nome": "Steampunk", "sky": ["#6e8fb3", "#c9b48f", "#f2d9a8"], "t0": [0.62, 0.66, 0.42], "t1": [0.86, 0.84, 0.58], "pronta": false}}/*FINE*/)
     .map(([k, v]) => [k, Object.assign({ dir: `assets/skins/${k}/`, grass: `assets/skins/${k}/grass.jpg`, dirt: `assets/skins/${k}/dirt.jpg`, rock: `assets/skins/${k}/rock.jpg` }, v)])),
   // SKIN-AUTO-FINE
 };
@@ -807,7 +807,7 @@ function rotate(step) {
     () => { cam.yaw = y1; cam.tx = gx + Math.sin(y1) * k0; cam.tz = gz + Math.cos(y1) * k0; rotating = false; });
   $('needle').style.transform = `rotate(${cam.view * 90}deg)`; $('dir-lbl').textContent = VIEWS[cam.view];
 }
-const ZMIN = .35, ZMAX = 3.4;
+const ZMIN = .35, ZMAX = 7; // zoom ravvicinato (richiesto da Andrea)
 function zoomBy(f) { const z0 = cam.zoom, z1 = Math.min(ZMAX, Math.max(ZMIN, cam.zoom * f)); tween('zoom', .3, k => { cam.zoom = z0 + (z1 - z0) * k; }); }
 function goTo(pos, z) { const x0 = cam.tx, z0 = cam.tz, zz0 = cam.zoom, zz1 = z || Math.max(cam.zoom, 1.8);
   tween('pan', .9, k => { cam.tx = x0 + (pos.x - x0) * k; cam.tz = z0 + (pos.z - z0) * k; cam.zoom = zz0 + (zz1 - zz0) * k; }); }
