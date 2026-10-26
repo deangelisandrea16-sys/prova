@@ -706,8 +706,25 @@ function person(g, opt) {
   P.play = (n, fade) => { const a = acts[n]; if (!a || P.cur === a) return; if (P.cur) P.cur.fadeOut(fade || .3); a.reset().fadeIn(fade || .3).play(); P.cur = a; };
   PEOPLE.push(P); return P;
 }
+/* ---- personaggi dipinti: 2 fotogrammi di camminata, davanti (F) e di spalle (B); specchiati per sinistra/destra ---- */
+const hasWalker = (k) => !!(SPR_INFO[k + '_F1'] && SPR_INFO[k + '_B1']);
+const _sa = new THREE.Vector3(), _sb = new THREE.Vector3();
+function spritePerson(kind, opt) {
+  const o = new THREE.Sprite(spriteMat()); o.userData.width = 1; o.userData.cy = .02; o.userData.set = () => {};
+  const P = Object.assign({ o, kind, acts: {}, cur: 'Idle', from: new THREE.Vector3(), to: new THREE.Vector3(), t: 1, len: 1, wait: 0, speed: .55, ft: 0, fr: 1, back: false, left: false, h: .66 }, opt);
+  P.acts = { Cheer: true }; P.play = (n) => { P.cur = n; };
+  const nFr = (d) => { let n = 0; while (SPR_INFO[kind + '_' + d + (n + 1)]) n++; return Math.max(1, n); };
+  P.frame = () => { const d = P.back ? 'B' : 'F', name = kind + '_' + d + (((P.fr - 1) % nFr(d)) + 1); const info = SPR_INFO[name];
+    if (info) o.userData.width = P.h * info.w / info.h; o.userData.flip = P.left; o.userData.img = null; setSpriteImg(o, name); };
+  P.mixer = { update: (dt) => { const walking = P.t < 1 && P.cur !== 'Idle';
+    if (walking) { _sa.copy(P.from).project(camera); _sb.copy(P.to).project(camera); P.back = _sb.y > _sa.y; P.left = _sb.x < _sa.x; P.ft += dt * (P.speed > 1 ? 12 : 7); }
+    const fr = walking ? (Math.floor(P.ft) % 4) + 1 : 1; const hop = P.cheer > 0 ? Math.abs(Math.sin(time * 9)) * .18 : walking ? Math.abs(Math.sin(P.ft * Math.PI)) * .035 : 0;
+    if (fr !== P.fr || P.back !== P._b || P.left !== P._l) { P.fr = fr; P._b = P.back; P._l = P.left; P.frame(); }
+    o.center.y = .02 - hop / Math.max(.01, o.scale.y); } };
+  P.frame(); o.position.y = .02; scene.add(o); PEOPLE.push(P); return P;
+}
 function spokePoint(d, f) { return W(DIRS[d][0], DIRS[d][1]).multiplyScalar(f); }
-function walkTo(P, from, to, anim) { P.from.copy(from); P.to.copy(to); P.len = Math.max(.01, from.distanceTo(to)); P.t = 0; P.o.position.copy(from); P.o.rotation.y = Math.atan2(to.x - from.x, to.z - from.z); P.play(anim || P.walkAnim || 'Walking_A'); }
+function walkTo(P, from, to, anim) { P.from.copy(from); P.to.copy(to); P.len = Math.max(.01, from.distanceTo(to)); P.t = 0; P.o.position.copy(from); if (!P.o.isSprite) P.o.rotation.y = Math.atan2(to.x - from.x, to.z - from.z); P.play(anim || P.walkAnim || 'Walking_A'); }
 function stepPeople(dt) {
   PEOPLE.forEach(P => {
     P.mixer.update(dt);
@@ -717,13 +734,19 @@ function stepPeople(dt) {
   });
 }
 function spokeWalker(g, d0, h) {
-  const P = person(g, { h: h || .62 }); P.dir = d0; P.out = true;
+  const P = typeof g === 'string' ? spritePerson(g, { h: (h || .62) * 1.45 }) : person(g, { h: h || .62 }); P.dir = d0; P.out = true;
   P.next = (Q) => { const a = spokePoint(Q.dir, .7), b = spokePoint(Q.dir, 3.4); const s = new THREE.Vector3(-(b.z - a.z), 0, b.x - a.x).normalize().multiplyScalar(.2);
     if (Q.out) walkTo(Q, a.clone().add(s), b.clone().add(s)); else { walkTo(Q, b.clone().sub(s), a.clone().sub(s)); Q.dir = (Q.dir + 1 + Math.floor(Math.random() * 4)) % 6; }
     Q.out = !Q.out; };
   P.wait = Math.random() * 3; P.play('Idle'); P.o.position.copy(spokePoint(d0, .6)); return P;
 }
 function addLife(G) {
+  // personaggi dipinti della skin, se ci sono; altrimenti i modelli 3D
+  if (hasWalker('omino_a')) { const kinds = ['omino_a', 'omino_b', 'messaggero'].filter(hasWalker);
+    for (let i = 0; i < 6; i++) spokeWalker(kinds[i % kinds.length], i, .62);
+    if (hasWalker('guardia')) [[.55, 1.35], [-.55, 1.35]].forEach(([x, z]) => { const P = spritePerson('guardia', { h: .95 }); P.o.position.set(x, .02, z); P.guard = true; });
+    G = Object.assign({}, G, { knight: null, mage: null, rogue: null }); }
+  if (hasWalker('animale')) G = Object.assign({}, G, { deer: 'animale' });
   const chars = [G.knight, G.mage, G.rogue].filter(Boolean);
   if (chars.length) {
     for (let i = 0; i < 6; i++) spokeWalker(chars[i % chars.length], i, .62);
@@ -733,9 +756,13 @@ function addLife(G) {
   }
   if (G.deer) {
     const spots = []; LAND.forEach(k => { const [q, r] = k.split(',').map(Number); const p = W(q, r), ang = Math.atan2(p.z, p.x) * 180 / Math.PI; if (hdist(q, r) === 4 && ang > -35 && ang < 35 && !OCC.has(k) && !ROADSET.has(k)) spots.push(p); });
-    spots.slice(0, 3).forEach((p, i) => { const P = person(G.deer, { h: .5, bones: true, keepProps: true, speed: .35, walkAnim: 'Walk', idleAnim: 'Eating', pause: 4 }); P.home = p.clone().add(new THREE.Vector3(-1.1, 0, .3)); P.o.position.copy(P.home); P.play('Eating');
+    spots.slice(0, 3).forEach((p, i) => { const P = G.deer === 'animale' ? spritePerson('animale', { h: .8, speed: .35, walkAnim: 'Walk', idleAnim: 'Idle', pause: 4 }) : person(G.deer, { h: .5, bones: true, keepProps: true, speed: .35, walkAnim: 'Walk', idleAnim: 'Eating', pause: 4 }); P.home = p.clone().add(new THREE.Vector3(-1.1, 0, .3)); P.o.position.copy(P.home); P.play('Eating');
       P.next = (Q) => { const t = Q.home.clone().add(new THREE.Vector3((Math.random() - .5) * 1.4, 0, (Math.random() - .5) * 1.4)); walkTo(Q, Q.o.position.clone(), t, 'Walk'); }; P.wait = 2 + i * 2; });
   }
+  if (SPR_INFO.minaccia_1) { // minaccia dipinta (drago, kraken, drone…): due fotogrammi che si alternano
+    const o = new THREE.Sprite(spriteMat()); o.userData.width = 3.2; o.userData.cy = .5; o.userData.set = () => {}; setSpriteImg(o, 'minaccia_1'); scene.add(o);
+    let t = 0, f = 1; const nm = SPR_INFO.minaccia_4 ? 4 : SPR_INFO.minaccia_2 ? 2 : 1; const mixer = { update: (dt) => { t += dt; const nf = Math.floor(t * (nm > 2 ? 7 : 3)) % nm + 1; if (nf !== f && SPR_INFO['minaccia_' + nf]) { f = nf; o.userData.img = null; setSpriteImg(o, 'minaccia_' + nf); } } };
+    D.dragon = { o, mixer, a: 0, k: S.scadute > 0 ? 1 : 0 }; o.visible = S.scadute > 0; G = Object.assign({}, G, { dragon: null }); }
   if (G.dragon) { const o = THREE.SkeletonUtils.clone(G.dragon.scene); o.scale.setScalar(1.3 / realHeight(o));
     o.traverse(m => { if (m.isMesh || m.isSkinnedMesh) { m.castShadow = true; m.frustumCulled = false; m.material = m.material.clone(); m.material.color.multiplyScalar(.32); m.material.transparent = true; } }); scene.add(o);
     const mixer = new THREE.AnimationMixer(o); const fly = G.dragon.animations.find(c => /Fast_Flying/.test(c.name)) || G.dragon.animations[0]; if (fly) mixer.clipAction(fly).play();
@@ -959,9 +986,9 @@ function editto(k) {
 }
 function messaggero(k) {
   const a = AG[k], d = dirOf(a.hex); toast(`Il messaggero corre verso ${a.nome}`); AUDIO.horn(); goTo(spokePoint(d < 0 ? 0 : d, 2), 1.7);
-  const tpl = CH.rogue || CH.knight;
+  const tpl = hasWalker('messaggero') ? 'messaggero' : CH.rogue || CH.knight;
   if (!tpl || d < 0) { later(1.5, () => approva(k)); return; }
-  const P = person(tpl, { h: .64, speed: 2.1, walkAnim: 'Running_A', pause: 0 });
+  const P = typeof tpl === 'string' ? spritePerson(tpl, { h: .92, speed: 2.1, walkAnim: 'Running_A', pause: 0 }) : person(tpl, { h: .64, speed: 2.1, walkAnim: 'Running_A', pause: 0 });
   walkTo(P, spokePoint(d, .7), spokePoint(d, 3.4), 'Running_A');
   P.arrive = (Q) => { Q.arrive = null; Q.play('Cheer'); approva(k); later(2.2, () => { scene.remove(Q.o); const i = PEOPLE.indexOf(Q); if (i >= 0) PEOPLE.splice(i, 1); }); };
 }
@@ -1064,7 +1091,7 @@ function loop(t) {
   clouds.forEach(c => { c.userData.a += dt * c.userData.v * .02; c.position.x = Math.cos(c.userData.a) * c.userData.r; c.position.z = Math.sin(c.userData.a) * c.userData.r; });
   BIRDS.forEach(b => { const u = b.userData; u.a += dt * .18; const a = u.a + u.ph * .25; b.position.set(Math.cos(a) * u.r + 2, u.h + Math.sin(time * 2 + u.ph) * .2, Math.sin(a) * u.r); b.rotation.y = -a; b.scale.y = .4 + Math.abs(Math.sin(time * 8 + u.ph)) * .9; });
   if (D.dragon) { const g = D.dragon; g.mixer.update(dt); g.a += dt * .6; const c = AG.fatture.pos, r = 2.2 + (1 - g.k) * 22, h = 3.6 + (1 - g.k) * 8;
-    g.o.position.set(c.x + Math.cos(g.a) * r, h + Math.sin(time * 1.3) * .3, c.z + Math.sin(g.a) * r); g.o.rotation.y = -g.a; }
+    g.o.position.set(c.x + Math.cos(g.a) * r, h + Math.sin(time * 1.3) * .3, c.z + Math.sin(g.a) * r); if (!g.o.isSprite) g.o.rotation.y = -g.a; }
   ORDER.forEach(k => { const a = AG[k]; a.ring.material.opacity = a.stato === 'bloccato' ? .55 + .45 * Math.sin(time * 4) : .9; });
   SKYCLOUDS.forEach(c => { c.userData.a += dt * c.userData.v; c.position.x = Math.cos(c.userData.a) * c.userData.d; c.position.z = Math.sin(c.userData.a) * c.userData.d; });
   stepPeople(dt);
