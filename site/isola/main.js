@@ -304,9 +304,10 @@ function sprTex(name) {
 }
 function spriteMat(edge) {
   const m = new THREE.SpriteMaterial({ transparent: true, depthTest: false, depthWrite: false });
-  m.userData.u = { uProg: { value: 1 }, uDir: { value: 1 }, uEdge: { value: new THREE.Color(edge || 0xffc35a) }, uDim: { value: 0 }, uY0: { value: 0 }, uY1: { value: 1 } };
+  m.userData.u = { uProg: { value: 1 }, uDir: { value: 1 }, uEdge: { value: new THREE.Color(edge || 0xffc35a) }, uDim: { value: 0 }, uY0: { value: 0 }, uY1: { value: 1 }, uFlip: { value: 0 } };
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, m.userData.u);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uFlip;').replace('#include <uv_vertex>', '#include <uv_vertex>\n#ifdef USE_UV\nif(uFlip>.5) vUv.x=1.-vUv.x;\n#endif');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
       uniform float uProg; uniform float uDir; uniform vec3 uEdge; uniform float uDim;
       float sH(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
@@ -329,7 +330,7 @@ function setSpriteImg(o, name) {
   o.userData.img = name;
   const info = SPR_INFO[name] || { w: 640, h: 640 }; const W = o.userData.width;
   o.material.map = sprTex(name); o.material.needsUpdate = true;
-  o.scale.set(o.userData.flip ? -W : W, W * info.h / info.w, 1); o.center.set(.5, Math.min(.45, o.userData.cy * info.w / info.h));
+  o.scale.set(W, W * info.h / info.w, 1); if (o.material.userData.u && o.material.userData.u.uFlip) o.material.userData.u.uFlip.value = o.userData.flip ? 1 : 0; o.center.set(.5, Math.min(.45, o.userData.cy * info.w / info.h));
 }
 // base: nome con le viste (es. 'castello') oppure immagine singola (es. 'casa_a'); facing: direzione dell'ingresso nel mondo
 function makeSprite(base, width, pos, facing, opt) {
@@ -1246,7 +1247,7 @@ Promise.all([fetchText('assets/kit.json').then(t => { progress(.7, 'Dipingo il t
       .then(([knight, mage, rogue, deer, dragon]) => { Object.assign(CH, { knight, mage, rogue }); addLife({ knight, mage, rogue, deer, dragon }); applyQuality(); });
   })
   .catch(err => { console.error(err); fail('Non riesco a caricare il regno. Ricarica la pagina. (' + (err && err.message ? err.message : err) + ')'); });
-window.__regno = { cam, rotate, goTo, EV, AG, S, ED, DECO, LAND, ROADT, scr: (q, r) => { const v = W(q, r).project(camera); return [(v.x * .5 + .5) * innerWidth, (-v.y * .5 + .5) * innerHeight]; } };
+window.__regno = { cam, rotate, goTo, EV, AG, S, PEOPLE, ED, DECO, LAND, ROADT, scr: (q, r) => { const v = W(q, r).project(camera); return [(v.x * .5 + .5) * innerWidth, (-v.y * .5 + .5) * innerHeight]; } };
 })();
 
 /* web app: si installa sulla schermata Home e funziona offline */
