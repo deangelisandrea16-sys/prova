@@ -43,7 +43,7 @@ const SKINS = {
   mediterraneo: { nome: 'Mediterraneo', dir: 'assets/sprites/', grass: 'assets/grass.jpg', dirt: 'assets/dirt.jpg', rock: 'assets/roccia.jpg',
     sky: ['#3f86c4', '#7cbde6', '#bfe3f7'], t0: [.62, .66, .4], t1: [.86, .84, .56] },
   // SKIN-AUTO-INIZIO (righe scritte dallo script di integrazione)
-  ...Object.fromEntries(Object.entries(/*SKINDATA*/{"vichinghi": {"nome": "Vichinghi", "sky": ["#2e5378", "#7298bd", "#dbe7f1"], "t0": [0.62, 0.7, 0.7], "t1": [0.8, 0.86, 0.86], "pronta": true}, "cyberpunk": {"nome": "Cyberpunk", "sky": ["#120b2e", "#3b1f72", "#d9508f"], "t0": [0.9, 0.9, 0.95], "t1": [1.05, 1.05, 1.1], "pronta": false}}/*FINE*/)
+  ...Object.fromEntries(Object.entries(/*SKINDATA*/{"vichinghi": {"nome": "Vichinghi", "sky": ["#2e5378", "#7298bd", "#dbe7f1"], "t0": [0.62, 0.7, 0.7], "t1": [0.8, 0.86, 0.86], "pronta": true}, "cyberpunk": {"nome": "Cyberpunk", "sky": ["#120b2e", "#3b1f72", "#d9508f"], "t0": [0.9, 0.9, 0.95], "t1": [1.05, 1.05, 1.1], "pronta": true}}/*FINE*/)
     .map(([k, v]) => [k, Object.assign({ dir: `assets/skins/${k}/`, grass: `assets/skins/${k}/grass.jpg`, dirt: `assets/skins/${k}/dirt.jpg`, rock: `assets/skins/${k}/rock.jpg` }, v)])),
   // SKIN-AUTO-FINE
 };
@@ -95,6 +95,10 @@ const isLand = (q, r) => LAND.has(K(q, r));
 const REGNI_KEY = 'regno-elenco-v1';
 let REGNI = (() => { try { const r = JSON.parse(localStorage.getItem(REGNI_KEY) || 'null'); if (r && Array.isArray(r.lista) && r.lista.length) return r; } catch (e) {} return { attivo: 'r1', lista: [{ id: 'r1', nome: 'Regno di Sire' }] }; })();
 if (!REGNI.lista.some(r => r.id === REGNI.attivo)) REGNI.attivo = REGNI.lista[0].id;
+// richiesta di Andrea (26/10): il regno di prima diventa "Orix01" e si apre un regno nuovo vuoto "Regione Sire" (una volta sola)
+if (!REGNI.m1) { const r1 = REGNI.lista.find(r => r.id === 'r1'); if (r1) r1.nome = 'Orix01';
+  if (!REGNI.lista.some(r => r.nome === 'Regione Sire')) REGNI.lista.unshift({ id: 'rsire', nome: 'Regione Sire' });
+  REGNI.attivo = 'rsire'; REGNI.m1 = 1; try { localStorage.setItem('regno-elenco-v1', JSON.stringify(REGNI)); } catch (e) {} }
 const salvaRegni = () => { try { localStorage.setItem(REGNI_KEY, JSON.stringify(REGNI)); } catch (e) {} };
 // il primo regno usa la chiave di prima, così la mappa già fatta resta
 const MAPPA_KEY = REGNI.attivo === 'r1' ? 'regno-mappa-v2' : 'regno-mappa-v2:' + REGNI.attivo;
@@ -216,10 +220,10 @@ function paintGround(mat, u) {
       float gH(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
       float gN(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(gH(i),gH(i+vec2(1,0)),f.x),mix(gH(i+vec2(0,1)),gH(i+vec2(1,1)),f.x),f.y); }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
-        float gUp=smoothstep(.45,.7,normalize(vGN).y);
+        float gUp=smoothstep(.3,.5,normalize(vGN).y);
         float gLow=1.-smoothstep(.2,.3,vGW.y);
         vec3 gBase=diffuseColor.rgb;
-        float gGreen=smoothstep(-.01,.05,gBase.g-gBase.r);
+        float gGreen=smoothstep(-.04,-.005,gBase.g-gBase.r);
         vec2 ruv=(vGW.xz+uHalf)/(2.*uHalf); float gRoad=texture2D(tRoad,ruv).r;
         float gRep=gUp*gLow*clamp(gGreen+gRoad*1.5,0.,1.);
         if(gRep>.001){

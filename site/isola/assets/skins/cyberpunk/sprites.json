@@ -148,5 +148,131 @@
   "h": 466,
   "alpha": true,
   "kb": 79
+ },
+ "cantiere_1": {
+  "w": 517,
+  "h": 446,
+  "alpha": true,
+  "kb": 81
+ },
+ "cantiere_2": {
+  "w": 503,
+  "h": 445,
+  "alpha": true,
+  "kb": 81
+ },
+ "cantiere_3": {
+  "w": 454,
+  "h": 456,
+  "alpha": true,
+  "kb": 76
+ },
+ "casa_a": {
+  "w": 463,
+  "h": 438,
+  "alpha": true,
+  "kb": 64
+ },
+ "casa_b": {
+  "w": 509,
+  "h": 435,
+  "alpha": true,
+  "kb": 75
+ },
+ "cipressi": {
+  "w": 500,
+  "h": 446,
+  "alpha": true,
+  "kb": 78
+ },
+ "fattoria": {
+  "w": 513,
+  "h": 422,
+  "alpha": true,
+  "kb": 99
+ },
+ "fontana": {
+  "w": 517,
+  "h": 426,
+  "alpha": true,
+  "kb": 86
+ },
+ "grano": {
+  "w": 513,
+  "h": 437,
+  "alpha": true,
+  "kb": 102
+ },
+ "montagna": {
+  "w": 508,
+  "h": 439,
+  "alpha": true,
+  "kb": 74
+ },
+ "pineta": {
+  "w": 510,
+  "h": 437,
+  "alpha": true,
+  "kb": 93
+ },
+ "pozzo": {
+  "w": 482,
+  "h": 436,
+  "alpha": true,
+  "kb": 75
+ },
+ "rovina": {
+  "w": 506,
+  "h": 447,
+  "alpha": true,
+  "kb": 81
+ },
+ "rupe": {
+  "w": 507,
+  "h": 453,
+  "alpha": true,
+  "kb": 84
+ },
+ "scogli": {
+  "w": 513,
+  "h": 394,
+  "alpha": true,
+  "kb": 77
+ },
+ "tempio_E": {
+  "w": 509,
+  "h": 431,
+  "alpha": true,
+  "kb": 74
+ },
+ "tempio_O": {
+  "w": 507,
+  "h": 435,
+  "alpha": true,
+  "kb": 77
+ },
+ "tempio_S": {
+  "w": 544,
+  "h": 440,
+  "alpha": true,
+  "kb": 93
+ },
+ "tenda": {
+  "w": 508,
+  "h": 436,
+  "alpha": true,
+  "kb": 77
+ },
+ "uliveto": {
+  "w": 512,
+  "h": 413,
+  "alpha": true,
+  "kb": 92
+ },
+ "vigneto": {
+  "w": 516,
+  "h": 434,
+  "alpha": true,
+  "kb": 79
  }
 }
