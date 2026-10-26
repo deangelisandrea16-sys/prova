@@ -724,8 +724,12 @@ function spritePerson(kind, opt) {
   P.frame = () => { const d = P.back ? 'B' : 'F', name = kind + '_' + d + (((P.fr - 1) % nFr(d)) + 1); const info = SPR_INFO[name];
     if (info) o.userData.width = P.h * info.w / info.h; o.userData.flip = P.left; o.userData.img = null; setSpriteImg(o, name); };
   P.mixer = { update: (dt) => { const walking = P.t < 1 && P.cur !== 'Idle';
+    if (P.post) { // guardie: ai lati dell'ingresso del castello, rivolte verso l'esterno come l'ingresso
+      const c = AG.sire.pos, f = AG.sire.obj.userData.facing, sx = -f.z, sz = f.x;
+      P.o.position.set(c.x + f.x * 1.55 + sx * P.post, .02, c.z + f.z * 1.55 + sz * P.post);
+      _sa.copy(P.o.position).project(camera); _sb.copy(P.o.position).add(f).project(camera); P.back = _sb.y > _sa.y; P.left = _sb.x < _sa.x; }
     if (walking) { _sa.copy(P.from).project(camera); _sb.copy(P.to).project(camera); P.back = _sb.y > _sa.y; P.left = _sb.x < _sa.x; P.ft += dt * (P.speed > 1 ? 12 : 7); }
-    const fr = walking ? (Math.floor(P.ft) % 4) + 1 : 1; const hop = P.cheer > 0 ? Math.abs(Math.sin(time * 9)) * .18 : walking ? Math.abs(Math.sin(P.ft * Math.PI)) * .035 : 0;
+    const fr = walking ? (Math.floor(P.ft) % 4) + 1 : 2; /* fermo: posa a piedi uniti */ const hop = P.cheer > 0 ? Math.abs(Math.sin(time * 9)) * .18 : walking ? Math.abs(Math.sin(P.ft * Math.PI)) * .035 : 0;
     if (fr !== P.fr || P.back !== P._b || P.left !== P._l) { P.fr = fr; P._b = P.back; P._l = P.left; P.frame(); }
     o.center.y = .02 - hop / Math.max(.01, o.scale.y); } };
   P.frame(); o.position.y = .02; scene.add(o); PEOPLE.push(P); return P;
@@ -751,7 +755,7 @@ function addLife(G) {
   // personaggi dipinti della skin, se ci sono; altrimenti i modelli 3D
   if (hasWalker('omino_a')) { const kinds = ['omino_a', 'omino_b', 'messaggero'].filter(hasWalker);
     for (let i = 0; i < 6; i++) spokeWalker(kinds[i % kinds.length], i, .62);
-    if (hasWalker('guardia')) [[.55, 1.35], [-.55, 1.35]].forEach(([x, z]) => { const P = spritePerson('guardia', { h: .95 }); P.o.position.set(x, .02, z); P.guard = true; });
+    if (hasWalker('guardia')) [.8, -.8].forEach(x => { const P = spritePerson('guardia', { h: .95, post: x }); P.guard = true; });
     G = Object.assign({}, G, { knight: null, mage: null, rogue: null }); }
   if (hasWalker('animale')) G = Object.assign({}, G, { deer: 'animale' });
   const chars = [G.knight, G.mage, G.rogue].filter(Boolean);
