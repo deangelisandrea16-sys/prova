@@ -370,13 +370,13 @@ function makeSprite(base, width, pos, facing, opt) {
 }
 let SPR_DT = 0;
 const _p0 = new THREE.Vector3(), _p1 = new THREE.Vector3(), _fw = new THREE.Vector3();
-function updateSprites() {
-  for (const o of SPRITES) {
+function updateSprites(fadeDur) {
+  if (!VIEW_LOCK) for (const o of SPRITES) {
     if (!o.userData.views) continue;
     _p0.copy(o.position).project(camera); _p1.copy(o.position).add(o.userData.facing).project(camera);
     const dx = _p1.x - _p0.x, dy = _p1.y - _p0.y; // y verso l'alto dello schermo
     const idx = dy <= 0 ? (dx <= 0 ? 0 : 1) : (dx >= 0 ? 2 : 3); // giù-sx N, giù-dx E, su-dx S, su-sx O
-    setSpriteImg(o, o.userData.views[idx]);
+    const prima = o.userData.img; setSpriteImg(o, o.userData.views[idx]); if (fadeDur && o.userData.img !== prima) o.userData.fadeDur = fadeDur;
   }
   // ordine di disegno: dal più lontano al più vicino, insieme a persone e drago
   camera.getWorldDirection(_fw);
@@ -386,7 +386,7 @@ function updateSprites() {
   list.sort((a, b) => b[0] - a[0]);
   list.forEach(([, o], i) => { if (o.isSprite) o.renderOrder = 10 + i; else o.traverse(m => { if (m.isMesh || m.isSkinnedMesh) m.renderOrder = 10 + i; }); });
   for (const o of SPRITES) { const g = o.userData.ghost; if (!g) continue;
-    if (o.userData.fade > 0) { o.userData.fade = Math.max(0, o.userData.fade - (reduceMotion ? 1 : SPR_DT / .28)); }
+    if (o.userData.fade > 0) { o.userData.fade = Math.max(0, o.userData.fade - (reduceMotion ? 1 : SPR_DT / (o.userData.fadeDur || .28))); if (!o.userData.fade) o.userData.fadeDur = 0; }
     const f = o.userData.fade; g.visible = o.visible && f > 0; g.material.opacity = f;
     g.renderOrder = o.renderOrder; }
 }
@@ -814,19 +814,20 @@ function placeCam() {
 }
 let rotating = false;
 // rotazione continua attorno al centro dello schermo; gli edifici dipinti cambiano vista in dissolvenza incrociata
-let ROT_SNAP = false, ROT_NEXT = null;
+let VIEW_LOCK = false; // durante la rotazione le immagini degli edifici restano quelle della vista finale
 function rotate(step) {
   if (rotating || !step) return; rotating = true;
   cam.view = (cam.view + step + 4) % 4; const y0 = cam.yaw, y1 = cam.yaw - step * Math.PI / 2;
   // punto del terreno al centro dello schermo: resta fermo mentre la vista gira
   const k0 = cam.ty / Math.tan(cam.pitch), gx = cam.tx - Math.sin(y0) * k0, gz = cam.tz - Math.cos(y0) * k0;
-  // niente giro della camera: gli edifici restano fermi e la vista nuova appare con una dissolvenza della stessa durata
+  // l'isola gira; gli edifici non cambiano immagine a metà giro: passano subito alla vista finale con una dissolvenza lunga quanto la rotazione
   const dur = .5 + .12 * (Math.abs(step) - 1);
-  ROT_SNAP = true; // al prossimo fotogramma si copia l'immagine attuale sopra il canvas, poi si salta alla vista nuova
-  ROT_NEXT = () => { cam.yaw = y1; cam.tx = gx + Math.sin(y1) * k0; cam.tz = gz + Math.cos(y1) * k0;
-    const fo = $('rot-fade'); fo.style.transition = 'none'; fo.style.opacity = '1'; fo.hidden = false; void fo.offsetWidth;
-    fo.style.transition = `opacity ${reduceMotion ? .01 : dur}s ease`; fo.style.opacity = '0';
-    setTimeout(() => { fo.hidden = true; rotating = false; }, (reduceMotion ? .01 : dur) * 1000 + 30); };
+  const s0 = { yaw: cam.yaw, tx: cam.tx, tz: cam.tz };
+  cam.yaw = y1; cam.tx = gx + Math.sin(y1) * k0; cam.tz = gz + Math.cos(y1) * k0; placeCam(); camera.updateMatrixWorld();
+  VIEW_LOCK = false; updateSprites(dur); VIEW_LOCK = true;
+  Object.assign(cam, s0); placeCam();
+  tween('rot', dur, k => { cam.yaw = y0 + (y1 - y0) * k; cam.tx = gx + Math.sin(cam.yaw) * k0; cam.tz = gz + Math.cos(cam.yaw) * k0; },
+    () => { cam.yaw = y1; cam.tx = gx + Math.sin(y1) * k0; cam.tz = gz + Math.cos(y1) * k0; rotating = false; VIEW_LOCK = false; });
   $('needle').style.transform = `rotate(${cam.view * 90}deg)`; $('dir-lbl').textContent = VIEWS[cam.view];
 }
 const ZMIN = .15, ZMAX = 7; // zoom ravvicinato (richiesto da Andrea)
@@ -1146,7 +1147,6 @@ function loop(t) {
   AUDIO.tick(time);
   updateSprites();
   renderer.render(scene, camera);
-  if (ROT_SNAP) { ROT_SNAP = false; const fo = $('rot-fade'), c = renderer.domElement; fo.width = c.width; fo.height = c.height; fo.getContext('2d').drawImage(c, 0, 0); const f = ROT_NEXT; ROT_NEXT = null; if (f) f(); }
   if (SNAP) scattaCartolina(); updateLabels();
   frames++; acc += dt; if (acc >= 1) { const f = $('fps-line'); if (f) f.textContent = `Qualità ${S.quality}: ${Math.round(frames / acc)} fotogrammi al secondo.`; frames = 0; acc = 0; }
   requestAnimationFrame(loop);
