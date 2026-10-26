@@ -41,9 +41,9 @@ const hexPos = (h) => W(h[0], h[1]);
 // scala del regno: ogni cosa occupa un raggio di tessere (0 = una tessera, 1 = 7 tessere, 2 = 19) e ha una larghezza coerente
 const HD = (a, b) => hdist(a[0] - b[0], a[1] - b[1]);
 const RAGGIO = { sire: 2, agente: 1, cantiere: 1, udienze: 0, pozzo: 0, rovina: 0,
-  montagna: 2, zucchero: 2, rupe: 1, fattoria: 1, pineta: 1, cipressi: 1, uliveto: 1, vigneto: 1, grano: 1, scogli: 0, fontana: 0, casa_a: 0, casa_b: 0 };
+  montagna: 3, zucchero: 3, rupe: 1, fattoria: 1, pineta: 1, cipressi: 1, uliveto: 1, vigneto: 1, grano: 1, scogli: 0, fontana: 0, casa_a: 0, casa_b: 0 };
 const LARGH = { sire: 8.2, agente: 5.2, cantiere: 4.8, pozzo: 1.7, tenda: 1.05, rovina: 2.6, casa: 2.6,
-  montagna: 9.5, zucchero: 9.5, rupe: 5.4, fattoria: 5.2, pineta: 4.8, cipressi: 4.6, uliveto: 4.8, vigneto: 5, grano: 5, scogli: 2.4, fontana: 2.4, casa_a: 2.6, casa_b: 2.6 };
+  montagna: 14, zucchero: 14, rupe: 5.8, fattoria: 5.2, pineta: 4.8, cipressi: 4.6, uliveto: 4.8, vigneto: 5, grano: 5, scogli: 2.4, fontana: 2.4, casa_a: 2.6, casa_b: 2.6 };
 const raggioDi = (id) => { const [t, k] = id.split(':'); if (t === 'ag') return k === 'sire' ? RAGGIO.sire : RAGGIO.agente; if (t === 'sp') return RAGGIO[k] || 0; if (t === 'rv') return 0; return RAGGIO[DECO[+k].n] || 0; };
 const tessereDi = (h, rg) => { const out = []; for (let dq = -rg; dq <= rg; dq++) for (let dr = Math.max(-rg, -dq - rg); dr <= Math.min(rg, -dq + rg); dr++) out.push([h[0] + dq, h[1] + dr]); return out; };
 /* ================= skin del regno ================= */
@@ -82,9 +82,9 @@ const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 400);
 
 scene.add(new THREE.HemisphereLight(0xdcecff, 0x6b5a3c, 0.6));
 const sun = new THREE.DirectionalLight(0xffe7c4, 1.9);
-sun.position.set(-16, 24, 10);
+sun.position.set(-48, 72, 30); // lontano: l'ombra copre anche un'isola molto allargata
 sun.castShadow = true;
-const sc = sun.shadow.camera; sc.left = -46; sc.right = 46; sc.top = 46; sc.bottom = -46; sc.near = 1; sc.far = 90;
+const sc = sun.shadow.camera; sc.left = -90; sc.right = 90; sc.top = 90; sc.bottom = -90; sc.near = 1; sc.far = 160;
 sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.025;
 scene.add(sun); scene.add(sun.target);
 const fill = new THREE.DirectionalLight(0x9cc4ff, 0.3); fill.position.set(14, 8, -12); scene.add(fill);
@@ -255,7 +255,7 @@ function paintGround(mat, u) {
 }
 // maschera della costa: 1 all'interno, scende verso il mare (sabbia sulle tessere di bordo)
 function coastTexture() {
-  const N = 512, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d'); const sc = N / (2 * SHORE.half);
+  const N = 1024, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d'); const sc = N / (2 * SHORE.half);
   x.fillStyle = '#000'; x.fillRect(0, 0, N, N); x.fillStyle = '#fff';
   LAND.forEach(k => { const [q, r] = k.split(',').map(Number); const p = W(q, r); x.beginPath();
     for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; const px = (p.x + Math.cos(a) * 1.16 + SHORE.half) * sc, py = (p.z + Math.sin(a) * 1.16 + SHORE.half) * sc; i ? x.lineTo(px, py) : x.moveTo(px, py); }
@@ -265,7 +265,7 @@ function coastTexture() {
   const tex = new THREE.CanvasTexture(out); tex.minFilter = THREE.LinearFilter; tex.flipY = false; // riga del canvas = asse z del mondo return tex;
 }
 function roadTexture() {
-  const N = 1024, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d'); const sc = N / (2 * SHORE.half);
+  const N = 2048, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d'); const sc = N / (2 * SHORE.half);
   x.fillStyle = '#000'; x.fillRect(0, 0, N, N); x.strokeStyle = '#fff'; x.lineCap = 'round'; x.lineWidth = 1.05 * sc;
   const P = (h) => { const p = hexPos(h); return [(p.x + SHORE.half) * sc, (p.z + SHORE.half) * sc]; };
   LINKS.forEach(([a, b]) => { x.beginPath(); x.moveTo(...P(a)); x.lineTo(...P(b)); x.stroke(); });
@@ -397,7 +397,7 @@ function dissolveOut(o, dur, done) { fitDissolve(o); o.userData.set('uDir', -1);
   tween('dis' + o.id, dur || 1.2, k => o.userData.set('uProg', k), () => { o.visible = false; o.userData.set('uDir', 1); o.userData.set('uProg', 1); done && done(); }); }
 
 /* ================= acqua ================= */
-const SHORE = { size: 1024, half: 52 };
+const SHORE = { size: 2048, half: 92 };
 function shoreTexture() {
   const N = SHORE.size, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d');
   const sc = N / (2 * SHORE.half);
@@ -817,7 +817,7 @@ function rotate(step) {
     () => { cam.yaw = y1; cam.tx = gx + Math.sin(y1) * k0; cam.tz = gz + Math.cos(y1) * k0; rotating = false; });
   $('needle').style.transform = `rotate(${cam.view * 90}deg)`; $('dir-lbl').textContent = VIEWS[cam.view];
 }
-const ZMIN = .35, ZMAX = 7; // zoom ravvicinato (richiesto da Andrea)
+const ZMIN = .15, ZMAX = 7; // zoom ravvicinato (richiesto da Andrea)
 function zoomBy(f) { const z0 = cam.zoom, z1 = Math.min(ZMAX, Math.max(ZMIN, cam.zoom * f)); tween('zoom', .3, k => { cam.zoom = z0 + (z1 - z0) * k; }); }
 function goTo(pos, z) { const x0 = cam.tx, z0 = cam.tz, zz0 = cam.zoom, zz1 = z || Math.max(cam.zoom, 1.8);
   tween('pan', .9, k => { cam.tx = x0 + (pos.x - x0) * k; cam.tz = z0 + (pos.z - z0) * k; cam.zoom = zz0 + (zz1 - zz0) * k; }); }
@@ -1134,7 +1134,7 @@ const ED = { on: false, tool: 'sel', sel: null, item: 'pineta', undo: [], redo: 
 const CATALOGO = ['zucchero', 'casa_a', 'casa_b', 'fattoria', 'pineta', 'cipressi', 'uliveto', 'vigneto', 'grano', 'montagna', 'rupe', 'scogli', 'fontana'];
 const NOMI_ED = { zucchero: 'Monte di C.', casa_a: 'Casa', casa_b: 'Casa', fattoria: 'Fattoria', pineta: 'Bosco', cipressi: 'Alberi', uliveto: 'Frutteto', vigneto: 'Vigneto', grano: 'Campo', montagna: 'Montagna', rupe: 'Rupe', scogli: 'Massi', fontana: 'Fontana' };
 const NOMI_SP = { cantiere: 'Cantiere', udienze: 'Approvazioni', pozzo: 'Pozzo dei desideri' };
-const MAX_DIST = 21;
+const MAX_DIST = 40; // si può allargare l'isola molto oltre la forma di partenza
 function mapNow() {
   return { v: 1, land: [...LAND], strade: [...ROADT],
     agenti: Object.fromEntries(ORDER.map(k => [k, [AG[k].hex[0], AG[k].hex[1], AG[k].rot || 0]])),
