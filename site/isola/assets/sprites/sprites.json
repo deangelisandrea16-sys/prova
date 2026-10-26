@@ -429,25 +429,25 @@
   "w": 265,
   "h": 336,
   "alpha": true,
-  "kb": 18
+  "kb": 16
  },
  "minaccia_2": {
   "w": 269,
   "h": 336,
   "alpha": true,
-  "kb": 16
+  "kb": 15
  },
  "minaccia_3": {
   "w": 309,
   "h": 336,
   "alpha": true,
-  "kb": 18
+  "kb": 16
  },
  "minaccia_4": {
   "w": 234,
   "h": 336,
   "alpha": true,
-  "kb": 15
+  "kb": 14
  },
  "omino_a_B1": {
   "w": 152,
