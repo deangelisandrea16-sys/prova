@@ -185,7 +185,7 @@ body.editing #pad{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 84px)}
 body.editing:not(.ui-off) #ui-tog{right:auto;left:max(8px,env(safe-area-inset-left,0px));top:calc(env(safe-area-inset-top,0px) + 64px)}
 #editbar{left:0;right:0;bottom:0;padding:0 max(10px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 8px) max(10px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:6px}
 #ed-tools,#ed-row,#ed-cat{background:linear-gradient(180deg,var(--wood-2),var(--wood));border:2px solid var(--gold-dim);border-radius:14px;padding:5px}
-#ed-tools{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+#ed-tools{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
 #editbar button{background:none;border:0;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:48px;padding:4px 6px;font:700 11.5px var(--font-display);letter-spacing:.03em}
 #editbar button svg{width:24px;height:24px}
 #editbar button[aria-pressed="true"]{background:rgba(232,184,92,.22);box-shadow:inset 0 0 0 1.5px var(--gold)}
@@ -242,6 +242,7 @@ body.editing:not(.ui-off) #ui-tog{right:auto;left:max(8px,env(safe-area-inset-le
     <button type="button" data-tool="terra" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.6v8.8L12 21l-8-4.6V7.6z" fill="#5fbf4a" stroke="#e8b85c"/><path d="M12 8v8M8 12h8" stroke="#16100c" stroke-width="2.4"/></svg><span>Terra +</span></button>
     <button type="button" data-tool="scava" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.6v8.8L12 21l-8-4.6V7.6z" fill="none" stroke="#e8b85c" stroke-dasharray="3 2"/><path d="M8 12h8" stroke="#e2513a" stroke-width="2.6"/></svg><span>Terra −</span></button>
     <button type="button" data-tool="strada" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21L11 3M16 21L13 3" stroke="#c99a5b" stroke-width="2.4"/><path d="M12 6v2M12 11v2M12 16v2" stroke="#e8b85c" stroke-width="1.6"/></svg><span>Strada</span></button>
+    <button type="button" data-tool="muro" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 11h20v9H2z" fill="#cfc4b2"/><path d="M2 15.5h20M8 11v4.5M15 11v4.5M5 15.5V20M12 15.5V20M18 15.5V20" stroke="#7a6a55" stroke-width="1.3"/><path d="M4 11V7h3v4M17 11V7h3v4" fill="#e8b85c"/></svg><span>Recinti</span></button>
     <button type="button" data-tool="metti" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l3 6H9zM7 10l3 6H4zM17 10l3 6h-6z" fill="#5fbf4a"/><path d="M12 15v6M9 18h6" stroke="#e8b85c" stroke-width="2"/></svg><span>Inserisci</span></button>
   </div>
   <div id="ed-cat" hidden></div>
@@ -278,6 +279,6 @@ body.editing:not(.ui-off) #ui-tog{right:auto;left:max(8px,env(safe-area-inset-le
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
-<script src="main.js?v=b6246e57"></script>
+<script src="main.js?v=6b4cce03"></script>
 </body>
 </html>
