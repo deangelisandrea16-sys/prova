@@ -745,8 +745,8 @@ function spritePerson(kind, opt) {
     if (info) o.userData.width = P.h * info.w / info.h; o.userData.flip = P.left; o.userData.img = null; setSpriteImg(o, name); };
   P.mixer = { update: (dt) => { const walking = P.t < 1 && P.cur !== 'Idle';
     if (P.post) { // guardie: ai lati dell'ingresso del castello, rivolte verso l'esterno come l'ingresso
-      const c = AG.sire.pos, f = AG.sire.obj.userData.facing, sx = -f.z, sz = f.x;
-      P.o.position.set(c.x + f.x * 1.55 + sx * P.post, .02, c.z + f.z * 1.55 + sz * P.post);
+      const c = AG.sire.pos, f = AG.sire.obj.userData.facing, sx = -f.z, sz = f.x, dd = 2 * RAGGIO.sire + 1.2;
+      P.o.position.set(c.x + f.x * dd + sx * P.post, .02, c.z + f.z * dd + sz * P.post);
       _sa.copy(P.o.position).project(camera); _sb.copy(P.o.position).add(f).project(camera); P.back = _sb.y > _sa.y; P.left = _sb.x < _sa.x; }
     if (walking) { _sa.copy(P.from).project(camera); _sb.copy(P.to).project(camera); P.back = _sb.y > _sa.y; P.left = _sb.x < _sa.x; P.ft += dt * (P.speed > 1 ? 12 : 7); }
     const fr = walking ? (Math.floor(P.ft) % 4) + 1 : 2; /* fermo: posa a piedi uniti */ const hop = P.cheer > 0 ? Math.abs(Math.sin(time * 9)) * .18 : walking ? Math.abs(Math.sin(P.ft * Math.PI)) * .035 : 0;
@@ -756,10 +756,42 @@ function spritePerson(kind, opt) {
 }
 function spokePoint(d, f) { return W(DIRS[d][0], DIRS[d][1]).multiplyScalar(f); }
 function walkTo(P, from, to, anim) { P.from.copy(from); P.to.copy(to); P.len = Math.max(.01, from.distanceTo(to)); P.t = 0; P.o.position.copy(from); if (!P.o.isSprite) P.o.rotation.y = Math.atan2(to.x - from.x, to.z - from.z); P.play(anim || P.walkAnim || 'Walking_A'); }
+/* ---- percorsi: si esce e si entra solo dalle porte, si cammina sulle tessere libere (strade preferite) ---- */
+const DIRW = DIRS.map(([q, r]) => W(q, r).normalize());
+function dirVicina(v) { let b = 0, bd = -2; DIRW.forEach((w, i) => { const d = w.x * v.x + w.z * v.z; if (d > bd) { bd = d; b = i; } }); return b; }
+function bloccate() { const s = new Set(); tuttiEnt().forEach(id => tessereDi(entHex(id), raggioDi(id)).forEach(t => s.add(K(...t)))); return s; }
+// porta di un edificio: tessera libera davanti all'ingresso (h) e soglia sul bordo, dove il personaggio compare e scompare
+function portaDi(k) { const a = AG[k], rg = k === 'sire' ? RAGGIO.sire : RAGGIO.agente;
+  const d = dirVicina((a.obj && a.obj.userData.facing) || new THREE.Vector3(0, 0, 1));
+  const ideale = [a.hex[0] + DIRS[d][0] * (rg + 1), a.hex[1] + DIRS[d][1] * (rg + 1)], blk = bloccate(); let h = null;
+  // la tessera davanti alla porta deve essere libera: altrimenti la più vicina libera attorno all'edificio
+  for (let ring = rg + 1; ring <= rg + 3 && !h; ring++) { let best = 1e9; tessereDi(a.hex, ring).forEach(t => { if (HD(t, a.hex) !== ring || !LAND.has(K(...t)) || blk.has(K(...t))) return; const c = HD(t, ideale); if (c < best) { best = c; h = t; } }); }
+  h = h || ideale;
+  const verso = W(h[0] - a.hex[0], h[1] - a.hex[1]).normalize();
+  return { h, soglia: a.pos.clone().setY(0).add(verso.multiplyScalar(2 * rg + .7)), d, rg }; }
+function cammino(h0, h1) {
+  const blk = bloccate(), k0 = K(...h0), k1 = K(...h1); blk.delete(k0); blk.delete(k1);
+  const dist = new Map([[k0, 0]]), prev = new Map(), open = [[0, h0]];
+  while (open.length) { open.sort((a, b) => a[0] - b[0]); const [c, h] = open.shift(), kh = K(...h); if (kh === k1) break; if (c > dist.get(kh)) continue;
+    for (const [dq, dr] of DIRS) { const n = [h[0] + dq, h[1] + dr], kn = K(...n); if (!LAND.has(kn) || blk.has(kn)) continue;
+      const nc = c + (ROADT.has(kn) ? 1 : 2.2); if (nc < (dist.has(kn) ? dist.get(kn) : 1e9)) { dist.set(kn, nc); prev.set(kn, kh); open.push([nc, n]); } } }
+  if (!dist.has(k1)) return null; const out = []; for (let k = k1; k; k = prev.get(k)) { const [q, r] = k.split(',').map(Number); out.unshift(W(q, r)); } return out; }
+// da porta a porta; null se gli edifici non sono collegati da terra libera
+function percorso(da, a, lat) { const pa = portaDi(da), pb = portaDi(a), mid = cammino(pa.h, pb.h); if (!mid) return null;
+  const pts = [pa.soglia, ...mid, pb.soglia];
+  if (lat) for (let i = 1; i < pts.length - 1; i++) { const v = pts[i + 1].clone().sub(pts[i - 1]); pts[i] = pts[i].clone().add(new THREE.Vector3(-v.z, 0, v.x).normalize().multiplyScalar(lat)); }
+  return pts; }
+function setAlpha(P, a) { P.alpha = a; if (P.o.isSprite) P.o.material.opacity = a; else P.o.traverse(m => { if (m.material) m.material.opacity = a; }); }
+// segue i punti; compare uscendo dalla porta (primo tratto) e scompare entrando (ultimo tratto)
+function seguiPercorso(P, pts, fine) { P.route = pts; P.ri = 0; P.fine = fine; setAlpha(P, 0); walkTo(P, pts[0], pts[1]); }
 function stepPeople(dt) {
   PEOPLE.forEach(P => {
     P.mixer.update(dt);
     if (P.cheer > 0) { P.cheer -= dt; if (P.cheer <= 0) P.play(P.t < 1 ? (P.walkAnim || 'Walking_A') : (P.idleAnim || 'Idle')); return; }
+    if (P.t < 1 && P.route) { P.t += dt * P.speed / P.len; const k = Math.min(P.t, 1), last = P.route.length - 2; P.o.position.lerpVectors(P.from, P.to, k);
+      setAlpha(P, P.ri === 0 && last === 0 ? 1 - Math.abs(k * 2 - 1) : P.ri === 0 ? k : P.ri === last ? 1 - k : 1);
+      if (P.t >= 1) { if (P.ri < last) { P.ri++; walkTo(P, P.route[P.ri], P.route[P.ri + 1]); } else { const f = P.fine; P.route = null; P.fine = null; setAlpha(P, 0); P.play(P.idleAnim || 'Idle'); P.wait = 0; f && f(P); } }
+      return; }
     if (P.t < 1) { P.t += dt * P.speed / P.len; P.o.position.lerpVectors(P.from, P.to, Math.min(P.t, 1)); if (P.t >= 1) { P.play(P.idleAnim || 'Idle'); P.wait = P.pause == null ? 1.5 + Math.random() * 2 : P.pause; P.arrive && P.arrive(P); } return; }
     if (P.wait > 0) { P.wait -= dt; if (P.wait <= 0 && P.next) P.next(P); }
   });
@@ -771,16 +803,26 @@ function spokeWalker(g, d0, h) {
     Q.out = !Q.out; };
   P.wait = Math.random() * 3; P.play('Idle'); P.o.position.copy(spokePoint(d0, .6)); return P;
 }
+// abitante: esce dalla porta di un edificio, cammina fino alla porta di un altro ed entra; poi riparte da lì
+function viaggiatore(g, i, h) {
+  const P = typeof g === 'string' ? spritePerson(g, { h: (h || .62) * .95 }) : person(g, { h: h || .62 });
+  P.lat = (Math.random() - .5) * .5; setAlpha(P, 0);
+  P.next = (Q) => { const ks = ORDER.filter(k => AG[k] && AG[k].obj); if (ks.length < 2) { Q.wait = 5; return; }
+    const da = Q.da || ks[i % ks.length]; let a = pick(ks); for (let n = 0; n < 8 && a === da; n++) a = pick(ks);
+    const pts = a !== da && percorso(da, a, Q.lat); if (!pts) { Q.da = pick(ks); Q.wait = 2; return; }
+    Q.da = a; Q.o.position.copy(pts[0]); seguiPercorso(Q, pts, (R2) => { R2.wait = 2 + Math.random() * 5; }); };
+  P.wait = 1 + i * 1.7 + Math.random() * 2; P.play('Idle'); return P;
+}
 function addLife(G) {
   // personaggi dipinti della skin, se ci sono; altrimenti i modelli 3D
   if (hasWalker('omino_a')) { const kinds = ['omino_a', 'omino_b', 'messaggero'].filter(hasWalker);
-    for (let i = 0; i < 6; i++) spokeWalker(kinds[i % kinds.length], i, .62);
+    for (let i = 0; i < 6; i++) viaggiatore(kinds[i % kinds.length], i, .62);
     if (hasWalker('guardia')) [.8, -.8].forEach(x => { const P = spritePerson('guardia', { h: .62, post: x * 1.6 }); P.guard = true; });
     G = Object.assign({}, G, { knight: null, mage: null, rogue: null }); }
   if (hasWalker('animale')) G = Object.assign({}, G, { deer: 'animale' });
   const chars = [G.knight, G.mage, G.rogue].filter(Boolean);
   if (chars.length) {
-    for (let i = 0; i < 6; i++) spokeWalker(chars[i % chars.length], i, .62);
+    for (let i = 0; i < 6; i++) viaggiatore(chars[i % chars.length], i, .62);
     if (G.knight) [[.55, 1.35], [-.55, 1.35]].forEach(([x, z]) => { const P = person(G.knight, { h: .64, keepProps: true }); P.o.position.set(x, 0, z); P.o.rotation.y = 0; P.play('Idle'); P.guard = true; });
     CAMPI_HEX.slice(0, 3).forEach((h, i) => { const P = person(chars[(i + 1) % chars.length], { h: .6, idleAnim: 'Interact', pause: 0 }); const p = hexPos(h); P.o.position.set(p.x + .3, 0, p.z - .2); P.o.rotation.y = i * 2; P.play(i % 2 ? 'PickUp' : 'Interact');
       P.next = (Q) => { Q.play(pick(['Interact', 'PickUp', 'Use_Item'])); Q.wait = 3 + Math.random() * 3; }; P.wait = 2 + i; });
@@ -788,7 +830,8 @@ function addLife(G) {
   if (G.deer) {
     const spots = []; LAND.forEach(k => { const [q, r] = k.split(',').map(Number); const p = W(q, r), ang = Math.atan2(p.z, p.x) * 180 / Math.PI; if (hdist(q, r) === 4 && ang > -35 && ang < 35 && !OCC.has(k) && !ROADSET.has(k)) spots.push(p); });
     spots.slice(0, 3).forEach((p, i) => { const P = G.deer === 'animale' ? spritePerson('animale', { h: .55, speed: .35, walkAnim: 'Walk', idleAnim: 'Idle', pause: 4 }) : person(G.deer, { h: .5, bones: true, keepProps: true, speed: .35, walkAnim: 'Walk', idleAnim: 'Eating', pause: 4 }); P.home = p.clone().add(new THREE.Vector3(-1.1, 0, .3)); P.o.position.copy(P.home); P.play('Eating');
-      P.next = (Q) => { const t = Q.home.clone().add(new THREE.Vector3((Math.random() - .5) * 1.4, 0, (Math.random() - .5) * 1.4)); walkTo(Q, Q.o.position.clone(), t, 'Walk'); }; P.wait = 2 + i * 2; });
+      P.next = (Q) => { const t = Q.home.clone().add(new THREE.Vector3((Math.random() - .5) * 1.4, 0, (Math.random() - .5) * 1.4)); const h = cubeRound((t.x - t.z / SQ3) / 2, t.z / SQ3);
+        if (!LAND.has(K(...h)) || bloccate().has(K(...h))) { Q.wait = 3; return; } walkTo(Q, Q.o.position.clone(), t, 'Walk'); }; P.wait = 2 + i * 2; });
   }
   if (SPR_INFO.minaccia_1) { // minaccia dipinta (drago, kraken, drone…): due fotogrammi che si alternano
     const o = new THREE.Sprite(spriteMat()); o.userData.width = 5.5; o.userData.cy = .5; o.userData.set = () => {}; setSpriteImg(o, 'minaccia_1'); scene.add(o);
@@ -1037,8 +1080,11 @@ function messaggero(k) {
   const tpl = hasWalker('messaggero') ? 'messaggero' : CH.rogue || CH.knight;
   if (!tpl || d < 0) { later(1.5, () => approva(k)); return; }
   const P = typeof tpl === 'string' ? spritePerson(tpl, { h: .6, speed: 2.1, walkAnim: 'Running_A', pause: 0 }) : person(tpl, { h: .64, speed: 2.1, walkAnim: 'Running_A', pause: 0 });
+  const togli = (Q) => { scene.remove(Q.o); const i = PEOPLE.indexOf(Q); if (i >= 0) PEOPLE.splice(i, 1); };
+  const pts = percorso('sire', k);
+  if (pts) { P.o.position.copy(pts[0]); seguiPercorso(P, pts, (Q) => { approva(k); togli(Q); }); return; }
   walkTo(P, spokePoint(d, .7), spokePoint(d, 3.4), 'Running_A');
-  P.arrive = (Q) => { Q.arrive = null; Q.play('Cheer'); approva(k); later(2.2, () => { scene.remove(Q.o); const i = PEOPLE.indexOf(Q); if (i >= 0) PEOPLE.splice(i, 1); }); };
+  P.arrive = (Q) => { Q.arrive = null; Q.play('Cheer'); approva(k); later(2.2, () => togli(Q)); };
 }
 function approva(k) {
   const a = AG[k]; a.stato = 'lavora'; S.udienze = Math.max(0, S.udienze - 1); hideTent();
@@ -1327,7 +1373,7 @@ Promise.all([fetchText('assets/kit.json').then(t => { progress(.7, 'Dipingo il t
       .then(([knight, mage, rogue, deer, dragon]) => { Object.assign(CH, { knight, mage, rogue }); addLife({ knight, mage, rogue, deer, dragon }); applyQuality(); });
   })
   .catch(err => { console.error(err); fail('Non riesco a caricare il regno. Ricarica la pagina. (' + (err && err.message ? err.message : err) + ')'); });
-window.__regno = { cam, rotate, goTo, EV, AG, S, PEOPLE, ED, DECO, LAND, ROADT, scr: (q, r) => { const v = W(q, r).project(camera); return [(v.x * .5 + .5) * innerWidth, (-v.y * .5 + .5) * innerHeight]; } };
+window.__regno = { cam, rotate, goTo, EV, AG, S, PEOPLE, ED, DECO, LAND, ROADT, bloccate, portaDi, messaggero, scr: (q, r) => { const v = W(q, r).project(camera); return [(v.x * .5 + .5) * innerWidth, (-v.y * .5 + .5) * innerHeight]; } };
 })();
 
 /* web app: si installa sulla schermata Home e funziona offline */
