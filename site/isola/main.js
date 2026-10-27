@@ -22,9 +22,19 @@ const AG = {
   outreach:   { nome: 'Outreach',   liv: 4,  hex: [-4, 4], model: 'building_tower_A_blue',  stato: 'bloccato', ruolo: 'Cerca nuovi clienti e scrive i primi messaggi.', kpi: { 'Contatti in coda': '24', 'Risposte': '4' },
                 blocco: { cosa: 'Approva il nuovo modello di mail', come: 'Rispondi APPROVA su Telegram' } },
   cervello:   { nome: 'Cervello',   liv: 9,  hex: [-4, 0], model: 'building_church_blue',   stato: 'lavora', ruolo: 'Impara dalle tue correzioni e salva le regole.', kpi: { 'Regole': '48', 'Nuove questa settimana': '6' } },
+  costi:      { nome: 'Costi',      liv: 3,  hex: [2, -6], model: 'building_mine_blue',     stato: 'lavora', ruolo: 'Il registro delle spese: abbonamenti fissi e servizi a consumo, con i limiti di budget.', kpi: {} },
   jarvis:     { nome: 'Jarvis',     liv: 10, hex: [0, -4], model: 'building_windmill_blue', stato: 'lavora', ruolo: 'Il motore: ascolta Telegram e smista il lavoro agli agenti. Il mulino gira quando è attivo.', kpi: { 'Messaggi oggi': '23', 'Ultima risposta': '2 min fa' } },
 };
-const ORDER = ['sire', 'jarvis', 'preventivi', 'fatture', 'contatti', 'outreach', 'cervello'];
+const ORDER = ['sire', 'jarvis', 'preventivi', 'fatture', 'contatti', 'outreach', 'cervello', 'costi'];
+// spese del regno [PROVA]: fonte vera reports/costi.json (stessa forma). importi in euro al mese; i servizi a consumo hanno uso e limite
+const COSTI = { mese: 'Ottobre 2026', budget: 450, aggiornato: 'oggi 11:00',
+  fissi: [ { nome: 'Claude (abbonamento)', euro: 108, rinnovo: '12 nov' }, { nome: 'Google AI Pro', euro: 21.99, rinnovo: '3 nov' }, { nome: 'ChatGPT Plus', euro: 23, rinnovo: '20 nov' },
+    { nome: 'Cloudflare Workers', euro: 5, rinnovo: '1 nov' }, { nome: 'Dominio', euro: 1.25, rinnovo: 'annuale' } ],
+  consumo: [ { nome: 'API Anthropic', euro: 38.4, uso: '2,1 M token', limite: 80 }, { nome: 'Trascrizione voce', euro: 6.1, uso: '310 min', limite: 20 },
+    { nome: 'Resend (email)', euro: 0, uso: '420 / 3.000 email', limite: 20 }, { nome: 'Supabase', euro: 0, uso: '0,2 / 0,5 GB', limite: 25 } ] };
+const eur = (n) => '€ ' + (+n).toLocaleString('it-IT', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+const costiTot = () => { const f = COSTI.fissi.reduce((a, x) => a + x.euro, 0), c = COSTI.consumo.reduce((a, x) => a + x.euro, 0); return { f, c, t: f + c }; };
+{ const T = costiTot(); AG.costi.kpi = { 'Totale mese': eur(T.t), 'Budget': eur(COSTI.budget) }; }
 const S = { tesoro: 21900, obiettivo: 25000, regole: 48, preventivi: 4, udienze: 2, scadute: 1, idee: 19, imp: { n: 3, tot: 8 }, quality: 'alta', suoni: false };
 const CANTIERE_HEX = [7, -3], UDIENZE_HEX = [2, 2], POZZO_HEX = [-2, -2], FONTANA_HEX = [-2, 3];
 const ROVINE_HEX = [[-7, 2], [-7, 4], [-6, 6], [-3, 7], [-1, 7]];
@@ -651,7 +661,7 @@ function buildWorld(groundU) {
   // quartieri degli agenti
   ORDER.forEach(k => {
     const a = AG[k]; const p = hexPos(a.hex);
-    const wd = k === 'sire' ? LARGH.sire : LARGH.agente; const o = makeSprite(SPR_OF[k], wd, p);
+    const wd = k === 'sire' ? LARGH.sire : LARGH.agente; const spr = SPR_INFO[SPR_OF[k] + '_N'] ? SPR_OF[k] : 'tesoro'; const o = makeSprite(spr, wd, p);
     o.userData.key = k; o.userData.ent = 'ag:' + k; PICK.push(o); a.obj = o; a.pos = p; a.top = wd * .78;
     a.ring = statusRing(p);
   });
@@ -712,7 +722,7 @@ function placeAll() {
   updateSprites();
 }
 function stageFor(n) { return n >= S.imp.tot ? 'torre' : n >= 6 ? 'cantiere_3' : n >= 3 ? 'cantiere_2' : 'cantiere_1'; }
-const SPR_OF = { sire: 'castello', jarvis: 'mulino', preventivi: 'mercato', fatture: 'tesoro', contatti: 'taverna', outreach: 'torre', cervello: 'tempio' };
+const SPR_OF = { sire: 'castello', jarvis: 'mulino', preventivi: 'mercato', fatture: 'tesoro', contatti: 'taverna', outreach: 'torre', cervello: 'tempio', costi: 'erario' };
 
 /* ================= personaggi e animali ================= */
 const PEOPLE = [];
@@ -1012,9 +1022,19 @@ function setUi(off, salva) { document.body.classList.toggle('ui-off', off); cons
   if (off) setSheet(null); if (salva) try { localStorage.setItem(UI_KEY, off ? '1' : '0'); } catch (e) {} }
 $('ui-tog').onclick = () => setUi(!document.body.classList.contains('ui-off'), true);
 try { setUi(localStorage.getItem(UI_KEY) === '1'); } catch (e) { setUi(false); }
+function apriCosti() { const T = costiTot(), pct = Math.min(100, T.t / COSTI.budget * 100);
+  const riga = (x, cons) => { const p = cons && x.limite ? Math.min(100, x.euro / x.limite * 100) : 0, al = cons && p >= 80;
+    return `<li class="cst${al ? ' al' : ''}"><span class="nm"><b>${esc(x.nome)}</b><small>${cons ? esc(x.uso) + (x.limite ? ` · limite ${eur(x.limite)}` : '') : 'rinnovo ' + esc(x.rinnovo)}</small>${cons && x.limite ? `<i class="bar"><i style="width:${p.toFixed(0)}%"></i></i>` : ''}</span><b class="eu">${eur(x.euro)}</b></li>`; };
+  setSheet('p-costi', `<div class="row"><h2>Costi · ${esc(COSTI.mese)}</h2><span class="st ${pct >= 90 ? 'bloccato' : 'lavora'}">${pct.toFixed(0)}% del budget</span></div>` +
+    kpiHtml({ 'Totale mese': eur(T.t), 'Fissi': eur(T.f), 'A consumo': eur(T.c), 'Budget': eur(COSTI.budget) }) +
+    `<i class="bar big"><i style="width:${pct.toFixed(0)}%"></i></i>` +
+    `<h3>Fissi</h3><ul class="list cst-l">${COSTI.fissi.map(x => riga(x, false)).join('')}</ul>` +
+    `<h3>A consumo</h3><ul class="list cst-l">${COSTI.consumo.map(x => riga(x, true)).join('')}</ul>` +
+    `<p><small>Dati [PROVA], aggiornati ${esc(COSTI.aggiornato)}. Fonte vera: <code>reports/costi.json</code>. In rosso i servizi oltre l'80% del limite.</small></p>`); }
 function kpiHtml(o) { return `<div class="kpis">${Object.entries(o).map(([k, v]) => `<div class="kpi"><small>${esc(k)}</small><b>${esc(v)}</b></div>`).join('')}</div>`; }
 function openPlace(key) {
   if (String(key).startsWith('dl:')) return;
+  if (key === 'costi') { goTo(AG.costi.pos); apriCosti(); return; }
   if (AG[key]) { const a = AG[key], st = STATI[a.stato]; goTo(a.pos);
     setSheet('p-' + key, `<div class="row"><h2>${esc(a.nome)} · livello ${a.liv}</h2><span class="st ${a.stato}">${st.t}</span></div><p>${esc(a.ruolo)}</p>${kpiHtml(a.kpi)}` +
       (a.stato === 'bloccato' && a.blocco ? `<div class="todo"><b>Serve da te:</b> ${esc(a.blocco.cosa)}.<br>Come: ${esc(a.blocco.come)}.</div><button class="act" data-editto="${key}">Apri l'editto<small>Demo: il sigillo approva e parte il messaggero</small></button>` : '') +

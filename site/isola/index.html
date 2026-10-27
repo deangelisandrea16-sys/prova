@@ -110,6 +110,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 .kpi{background:rgba(0,0,0,.25);border:1px solid rgba(232,184,92,.25);border-radius:8px;padding:6px 8px}
 .kpi small{display:block;font-size:11px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.05em}
 .kpi b{font:700 17px var(--font-display);font-variant-numeric:tabular-nums}
+.cst-l li{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.cst-l .nm{flex:1;min-width:0}.cst-l .nm small{display:block;color:var(--ink-dim);font-size:12px}
+.cst-l .eu{font:700 15px var(--font-display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cst.al .eu,.cst.al .nm b{color:#ffb4a6}
+.bar{display:block;height:5px;border-radius:3px;background:rgba(255,255,255,.12);margin-top:5px;overflow:hidden}
+.bar>i{display:block;height:100%;background:#7dd38a;border-radius:3px}.cst.al .bar>i{background:var(--bad)}
+.bar.big{height:8px;margin:8px 0 4px}
+#sheet h3{font:700 14px var(--font-display);margin:12px 0 2px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-dim)}
 .todo{background:rgba(226,81,58,.14);border:1px solid var(--bad);border-radius:8px;padding:8px 10px;font-size:14px;line-height:1.4}
 .todo b{color:#ffb4a6}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
@@ -270,6 +278,6 @@ body.editing:not(.ui-off) #ui-tog{right:auto;left:max(8px,env(safe-area-inset-le
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
-<script src="main.js?v=b5cd5272"></script>
+<script src="main.js?v=b6246e57"></script>
 </body>
 </html>
