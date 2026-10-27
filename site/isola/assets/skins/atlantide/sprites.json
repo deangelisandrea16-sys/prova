@@ -6,7 +6,7 @@
   "kb": 16
  },
  "animale_B2": {
-  "w": 297,
+  "w": 274,
   "h": 250,
   "alpha": true,
   "kb": 14
@@ -36,7 +36,7 @@
   "kb": 15
  },
  "animale_F3": {
-  "w": 336,
+  "w": 320,
   "h": 262,
   "alpha": true,
   "kb": 16
@@ -132,19 +132,19 @@
   "kb": 21
  },
  "guardia_B2": {
-  "w": 292,
+  "w": 289,
   "h": 400,
   "alpha": true,
   "kb": 21
  },
  "guardia_B3": {
-  "w": 292,
+  "w": 289,
   "h": 400,
   "alpha": true,
   "kb": 20
  },
  "guardia_B4": {
-  "w": 293,
+  "w": 290,
   "h": 400,
   "alpha": true,
   "kb": 21
@@ -156,19 +156,19 @@
   "kb": 26
  },
  "guardia_F2": {
-  "w": 286,
+  "w": 267,
   "h": 400,
   "alpha": true,
   "kb": 26
  },
  "guardia_F3": {
-  "w": 273,
+  "w": 267,
   "h": 400,
   "alpha": true,
   "kb": 26
  },
  "guardia_F4": {
-  "w": 283,
+  "w": 267,
   "h": 400,
   "alpha": true,
   "kb": 25
@@ -330,7 +330,7 @@
   "kb": 20
  },
  "omino_a_F2": {
-  "w": 231,
+  "w": 114,
   "h": 400,
   "alpha": true,
   "kb": 16
@@ -360,7 +360,7 @@
   "kb": 15
  },
  "omino_b_B3": {
-  "w": 233,
+  "w": 193,
   "h": 400,
   "alpha": true,
   "kb": 15

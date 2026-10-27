@@ -132,13 +132,13 @@
   "kb": 20
  },
  "guardia_B2": {
-  "w": 281,
+  "w": 254,
   "h": 400,
   "alpha": true,
   "kb": 20
  },
  "guardia_B3": {
-  "w": 279,
+  "w": 247,
   "h": 400,
   "alpha": true,
   "kb": 20
@@ -156,13 +156,13 @@
   "kb": 22
  },
  "guardia_F2": {
-  "w": 280,
+  "w": 233,
   "h": 400,
   "alpha": true,
   "kb": 19
  },
  "guardia_F3": {
-  "w": 277,
+  "w": 233,
   "h": 400,
   "alpha": true,
   "kb": 20
@@ -204,13 +204,13 @@
   "kb": 17
  },
  "messaggero_B2": {
-  "w": 261,
+  "w": 148,
   "h": 400,
   "alpha": true,
   "kb": 13
  },
  "messaggero_B3": {
-  "w": 309,
+  "w": 196,
   "h": 400,
   "alpha": true,
   "kb": 17
@@ -306,7 +306,7 @@
   "kb": 15
  },
  "omino_a_B2": {
-  "w": 255,
+  "w": 179,
   "h": 400,
   "alpha": true,
   "kb": 15
@@ -336,7 +336,7 @@
   "kb": 16
  },
  "omino_a_F3": {
-  "w": 282,
+  "w": 187,
   "h": 400,
   "alpha": true,
   "kb": 14
@@ -390,7 +390,7 @@
   "kb": 18
  },
  "omino_b_F4": {
-  "w": 204,
+  "w": 135,
   "h": 400,
   "alpha": true,
   "kb": 14
