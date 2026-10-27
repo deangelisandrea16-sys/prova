@@ -748,7 +748,9 @@ function spritePerson(kind, opt) {
       const c = AG.sire.pos, f = AG.sire.obj.userData.facing, sx = -f.z, sz = f.x, dd = 2 * RAGGIO.sire + 1.2;
       P.o.position.set(c.x + f.x * dd + sx * P.post, .02, c.z + f.z * dd + sz * P.post);
       _sa.copy(P.o.position).project(camera); _sb.copy(P.o.position).add(f).project(camera); P.back = _sb.y > _sa.y; P.left = _sb.x < _sa.x; }
-    if (walking) { _sa.copy(P.from).project(camera); _sb.copy(P.to).project(camera); P.back = _sb.y > _sa.y; P.left = _sb.x < _sa.x; P.ft += dt * (P.speed > 1 ? 12 : 7); }
+    if (walking) { _sa.copy(P.from).project(camera); _sb.copy(P.to).project(camera); const vx = _sb.x - _sa.x, vy = (_sb.y - _sa.y) * (cam.hh || 1) / (cam.hw || 1), vl = Math.hypot(vx, vy) || 1;
+      // cambia verso solo se il movimento è deciso in quella direzione: niente scatti destra/sinistra sui tratti quasi verticali o orizzontali
+      if (Math.abs(vy) > vl * .3) P.back = vy > 0; if (Math.abs(vx) > vl * .3) P.left = vx < 0; P.ft += dt * (P.speed > 1 ? 12 : 7); }
     const fr = walking ? (Math.floor(P.ft) % 4) + 1 : 2; /* fermo: posa a piedi uniti */ const hop = P.cheer > 0 ? Math.abs(Math.sin(time * 9)) * .18 : walking ? Math.abs(Math.sin(P.ft * Math.PI)) * .035 : 0;
     if (fr !== P.fr || P.back !== P._b || P.left !== P._l) { P.fr = fr; P._b = P.back; P._l = P.left; P.frame(); }
     o.center.y = .02 - hop / Math.max(.01, o.scale.y); } };
@@ -778,9 +780,14 @@ function cammino(h0, h1) {
   if (!dist.has(k1)) return null; const out = []; for (let k = k1; k; k = prev.get(k)) { const [q, r] = k.split(',').map(Number); out.unshift(W(q, r)); } return out; }
 // da porta a porta; null se gli edifici non sono collegati da terra libera
 function percorso(da, a, lat) { const pa = portaDi(da), pb = portaDi(a), mid = cammino(pa.h, pb.h); if (!mid) return null;
-  const pts = [pa.soglia, ...mid, pb.soglia];
+  const pts = liscia([pa.soglia, ...mid, pb.soglia]);
   if (lat) for (let i = 1; i < pts.length - 1; i++) { const v = pts[i + 1].clone().sub(pts[i - 1]); pts[i] = pts[i].clone().add(new THREE.Vector3(-v.z, 0, v.x).normalize().multiplyScalar(lat)); }
   return pts; }
+// toglie le svolte inutili: tiene un punto solo se la linea dritta verso il successivo attraversa tessere occupate
+function libera(a, b, blk) { const n = Math.ceil(a.distanceTo(b) / .35); for (let i = 1; i < n; i++) { const x = a.x + (b.x - a.x) * i / n, z = a.z + (b.z - a.z) * i / n, h = cubeRound((x - z / SQ3) / 2, z / SQ3), k = K(...h); if (!LAND.has(k) || blk.has(k)) return false; } return true; }
+function liscia(pts) { if (pts.length <= 3) return pts; const blk = bloccate(), out = [pts[0], pts[1]]; let i = 1;
+  while (i < pts.length - 2) { let j = pts.length - 2; while (j > i + 1 && !libera(pts[i], pts[j], blk)) j--; out.push(pts[j]); i = j; }
+  out.push(pts[pts.length - 1]); return out; }
 function setAlpha(P, a) { P.alpha = a; if (P.o.isSprite) P.o.material.opacity = a; else P.o.traverse(m => { if (m.material) m.material.opacity = a; }); }
 // segue i punti; compare uscendo dalla porta (primo tratto) e scompare entrando (ultimo tratto)
 function seguiPercorso(P, pts, fine) { P.route = pts; P.ri = 0; P.fine = fine; setAlpha(P, 0); walkTo(P, pts[0], pts[1]); }
@@ -1186,7 +1193,8 @@ function loop(t) {
   BIRDS.forEach(b => { const u = b.userData; u.a += dt * .18; const a = u.a + u.ph * .25; b.position.set(Math.cos(a) * u.r + 2, u.h + Math.sin(time * 2 + u.ph) * .2, Math.sin(a) * u.r); b.rotation.y = -a; b.scale.y = .4 + Math.abs(Math.sin(time * 8 + u.ph)) * .9; });
   if (D.dragon) { const g = D.dragon; g.mixer.update(dt); g.a += dt * .6; const c = AG.fatture.pos, r = 2.2 + (1 - g.k) * 22, h = 3.6 + (1 - g.k) * 8;
     g.o.position.set(c.x + Math.cos(g.a) * r, h + Math.sin(time * 1.3) * .3, c.z + Math.sin(g.a) * r); if (!g.o.isSprite) g.o.rotation.y = -g.a;
-    else { _sa.copy(g.o.position).project(camera); if (g.px !== undefined) { const dx = _sa.x - g.px; if (Math.abs(dx) > 1e-5) g.o.material.userData.u.uFlip.value = dx < 0 ? 1 : 0; } g.px = _sa.x; } } // il drago dipinto guarda dove vola
+    else { _sa.set(c.x + Math.cos(g.a) * r, h, c.z + Math.sin(g.a) * r).project(camera); _sb.set(c.x + Math.cos(g.a + .05) * r, h, c.z + Math.sin(g.a + .05) * r).project(camera);
+      const dx = _sb.x - _sa.x, dy = _sb.y - _sa.y; if (Math.abs(dx) > Math.hypot(dx, dy) * .25) g.o.material.userData.u.uFlip.value = dx < 0 ? 1 : 0; } } // il drago dipinto guarda dove vola (velocità vera, non lo spostamento della camera)
   ORDER.forEach(k => { const a = AG[k]; a.ring.material.opacity = a.stato === 'bloccato' ? .55 + .45 * Math.sin(time * 4) : .9; });
   SKYCLOUDS.forEach(c => { c.userData.a += dt * c.userData.v; c.position.x = Math.cos(c.userData.a) * c.userData.d; c.position.z = Math.sin(c.userData.a) * c.userData.d; });
   stepPeople(dt);
