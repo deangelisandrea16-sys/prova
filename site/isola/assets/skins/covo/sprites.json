@@ -538,5 +538,29 @@
   "h": 571,
   "alpha": true,
   "kb": 107
+ },
+ "erario_E": {
+  "w": 640,
+  "h": 620,
+  "alpha": true,
+  "kb": 69
+ },
+ "erario_N": {
+  "w": 640,
+  "h": 620,
+  "alpha": true,
+  "kb": 68
+ },
+ "erario_O": {
+  "w": 640,
+  "h": 622,
+  "alpha": true,
+  "kb": 62
+ },
+ "erario_S": {
+  "w": 640,
+  "h": 622,
+  "alpha": true,
+  "kb": 62
  }
 }
