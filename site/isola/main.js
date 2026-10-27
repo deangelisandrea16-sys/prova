@@ -13,7 +13,8 @@ const STATI = {
   cantiere: { t: 'In costruzione', col: 0xe8b13a },
   riposo:   { t: 'A riposo',       col: 0x9aa3ad },
 };
-const DIRS = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]]; // 0°,60°,…,300°
+const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]]; // quadrati: i 4 lati
+const DIR8 = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]]; // anche le diagonali (percorsi, strade, recinti)
 const AG = {
   sire:       { nome: 'Sire',       liv: 8,  hex: [0, 0],  model: 'building_castle_blue',   stato: 'lavora', ruolo: 'La capitale. Qui arrivano i report degli agenti e il riassunto del giorno. Tocca lo stemma in alto per sentire il Sire.', kpi: { 'Agenti al lavoro': '5 su 6', 'Report oggi': '14' } },
   preventivi: { nome: 'Preventivi', liv: 5,  hex: [4, -4], model: 'building_market_blue',   stato: 'lavora', ruolo: 'Prepara e segue i preventivi.', kpi: { 'Aperti': '4', 'Accettati nel mese': '2', 'Valore aperto': '€ 18.400' } },
@@ -42,20 +43,29 @@ const CAMPI_HEX = [[6, 2], [5, 4], [7, 1], [4, 6], [8, 0]];
 const CONTORNO = { 'building_blacksmith_blue': [2, -1], 'building_lumbermill_blue': [5, -4], 'building_archeryrange_blue': [-1, 5] };
 const NEWS = [['09:10', 'Preventivi · Hotel X ha accettato € 4.800'], ['10:32', 'Fatture · fattura #118 scaduta da 3 giorni'], ['11:05', 'Outreach · fermo, serve la tua approvazione'], ['12:40', 'Cervello · salvate 3 regole nuove']];
 
-/* ================= hex helpers ================= */
+/* ================= griglia a quadrati: 1 esagono di prima = 3×3 quadrati ================= */
 const SQ3 = Math.sqrt(3);
-const K = (q, r) => q + ',' + r;
-const hdist = (q, r) => (Math.abs(q) + Math.abs(r) + Math.abs(-q - r)) / 2;
-const W = (q, r) => new THREE.Vector3(2 * q + r, 0, SQ3 * r);
+const CELLA = 2 / 3; // lato di un quadrato, in unità del mondo
+const K = (x, y) => x + ',' + y;
+const hdist = (x, y) => Math.max(Math.abs(x), Math.abs(y)); // distanza in quadrati (anche in diagonale)
+const W = (x, y) => new THREE.Vector3(x * CELLA, 0, y * CELLA);
 const hexPos = (h) => W(h[0], h[1]);
-// scala del regno: ogni cosa occupa un raggio di tessere (0 = una tessera, 1 = 7 tessere, 2 = 19) e ha una larghezza coerente
+const cellaDi = (x, z) => [Math.round(x / CELLA), Math.round(z / CELLA)]; // dal mondo al quadrato
+const daEsagono = (q, r) => cellaDi((2 * q + r) * 1.25, SQ3 * r * 1.25); // posizioni di base, scritte ancora in coordinate esagonali (un po' più larghe: gli ingombri quadrati non si toccano)
+const DIRH = [0, 1, 2, 3, 4, 5].map(i => new THREE.Vector3(Math.cos(i * Math.PI / 3), 0, Math.sin(i * Math.PI / 3))); // 6 direzioni decorative
+// scala del regno: ogni cosa occupa un quadrato di (2·raggio+1)² quadrati e ha una larghezza coerente
 const HD = (a, b) => hdist(a[0] - b[0], a[1] - b[1]);
-const RAGGIO = { sire: 2, agente: 1, cantiere: 1, udienze: 0, pozzo: 0, rovina: 0,
-  montagna: 3, zucchero: 3, rupe: 1, fattoria: 1, pineta: 1, cipressi: 1, uliveto: 1, vigneto: 1, grano: 1, scogli: 0, fontana: 0, casa_a: 0, casa_b: 0 };
+const RAGGIO = { sire: 7, agente: 4, cantiere: 4, udienze: 1, pozzo: 1, rovina: 1,
+  montagna: 10, zucchero: 10, rupe: 4, fattoria: 4, pineta: 4, cipressi: 4, uliveto: 4, vigneto: 4, grano: 4, scogli: 1, fontana: 1, casa_a: 1, casa_b: 1 };
+const RW = (rg) => (rg + .5) * CELLA; // metà lato dell'ingombro, nel mondo
 const LARGH = { sire: 8.2, agente: 5.2, cantiere: 4.8, pozzo: 1.7, tenda: 1.05, rovina: 2.6, casa: 2.6,
   montagna: 14, zucchero: 14, rupe: 5.8, fattoria: 5.2, pineta: 4.8, cipressi: 4.6, uliveto: 4.8, vigneto: 5, grano: 5, scogli: 2.4, fontana: 2.4, casa_a: 2.6, casa_b: 2.6 };
-const raggioDi = (id) => { const [t, k] = id.split(':'); if (t === 'ag') return k === 'sire' ? RAGGIO.sire : RAGGIO.agente; if (t === 'sp') return RAGGIO[k] || 0; if (t === 'rv') return 0; return RAGGIO[DECO[+k].n] || 0; };
-const tessereDi = (h, rg) => { const out = []; for (let dq = -rg; dq <= rg; dq++) for (let dr = Math.max(-rg, -dq - rg); dr <= Math.min(rg, -dq + rg); dr++) out.push([h[0] + dq, h[1] + dr]); return out; };
+const raggioDi = (id) => { const [t, k] = id.split(':'); if (t === 'ag') return k === 'sire' ? RAGGIO.sire : RAGGIO.agente; if (t === 'sp') return RAGGIO[k] || 0; if (t === 'rv') return RAGGIO.rovina; return RAGGIO[DECO[+k].n] || 0; };
+const tessereDi = (h, rg) => { const out = []; for (let dx = -rg; dx <= rg; dx++) for (let dy = -rg; dy <= rg; dy++) out.push([h[0] + dx, h[1] + dy]); return out; };
+// le posizioni di partenza sono scritte sugli esagoni: si portano sui quadrati una volta sola
+[...ORDER.map(k => AG[k].hex), CANTIERE_HEX, UDIENZE_HEX, POZZO_HEX, FONTANA_HEX, ...ROVINE_HEX, ...CAMPI_HEX, ...Object.values(CONTORNO)].forEach(h => { const c = daEsagono(h[0], h[1]); h[0] = c[0]; h[1] = c[1]; });
+// riga di quadrati tra due quadrati (tratti dell'editor e strade di base)
+function rigaCelle(a, b) { const out = [], n = Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])); for (let i = 0; i <= n; i++) out.push([Math.round(a[0] + (b[0] - a[0]) * i / (n || 1)), Math.round(a[1] + (b[1] - a[1]) * i / (n || 1))]); return out; }
 /* ================= skin del regno ================= */
 const SKINS = {
   mediterraneo: { nome: 'Mediterraneo', dir: 'assets/sprites/', grass: 'assets/grass.jpg', dirt: 'assets/dirt.jpg', rock: 'assets/roccia.jpg',
@@ -101,11 +111,10 @@ const fill = new THREE.DirectionalLight(0x9cc4ff, 0.3); fill.position.set(14, 8,
 
 /* ================= mappa ================= */
 const LAND = new Set();
-for (let q = -16; q <= 16; q++) for (let r = -16; r <= 16; r++) {
-  const d = hdist(q, r); if (d > 15) continue;
-  const p = W(q, r), a = Math.atan2(p.z, p.x);
-  const lim = 12.6 + 1 * Math.sin(3 * a + 1.1) + .6 * Math.sin(5 * a - .4);
-  if (d <= lim) LAND.add(K(q, r));
+for (let x = -45; x <= 45; x++) for (let y = -45; y <= 45; y++) {
+  const p = W(x, y), a = Math.atan2(p.z, p.x);
+  const lim = (12.6 + 1 * Math.sin(3 * a + 1.1) + .6 * Math.sin(5 * a - .4)) * 1.9; // stesso profilo dell'isola di prima, in unità del mondo
+  if (p.length() <= lim) LAND.add(K(x, y));
 }
 const isLand = (q, r) => LAND.has(K(q, r));
 /* ---- mappa modificata con l'editor (salvata su questo dispositivo) ---- */
@@ -125,9 +134,10 @@ if (!REGNI.m2) { if (!REGNI.lista.some(r => r.id === 'rclaude')) REGNI.lista.pus
   REGNI.m2 = 1; try { localStorage.setItem(REGNI_KEY, JSON.stringify(REGNI)); } catch (e) {} }
 const salvaRegni = () => { try { localStorage.setItem(REGNI_KEY, JSON.stringify(REGNI)); } catch (e) {} };
 // il primo regno usa la chiave di prima, così la mappa già fatta resta
-const MAPPA_KEY = REGNI.attivo === 'r1' ? 'regno-mappa-v2' : 'regno-mappa-v2:' + REGNI.attivo;
+// griglia a quadrati (27/10): mappe nuove su chiavi nuove; quelle sugli esagoni restano salvate così com'erano
+const MAPPA_KEY = 'regno-quadri-v1:' + REGNI.attivo;
 let MAPPA = null;
-try { MAPPA = JSON.parse(localStorage.getItem(MAPPA_KEY) || 'null'); if (!MAPPA || MAPPA.v !== 1 || !Array.isArray(MAPPA.land) || MAPPA.land.length < 7) MAPPA = null; } catch (e) { MAPPA = null; }
+try { MAPPA = JSON.parse(localStorage.getItem(MAPPA_KEY) || 'null'); if (!MAPPA || MAPPA.v !== 2 || !Array.isArray(MAPPA.land) || MAPPA.land.length < 7) MAPPA = null; } catch (e) { MAPPA = null; }
 const setHex = (dst, src) => { if (Array.isArray(src)) { dst[0] = +src[0]; dst[1] = +src[1]; } };
 if (MAPPA) {
   LAND.clear(); MAPPA.land.forEach(k => LAND.add(String(k)));
@@ -135,7 +145,7 @@ if (MAPPA) {
   const sp = MAPPA.spec || {}; setHex(CANTIERE_HEX, sp.cantiere); setHex(UDIENZE_HEX, sp.udienze); setHex(POZZO_HEX, sp.pozzo);
   (MAPPA.rovine || []).forEach((h, i) => { if (ROVINE_HEX[i]) setHex(ROVINE_HEX[i], h); });
 }
-if (!MAPPA) [CANTIERE_HEX, UDIENZE_HEX, POZZO_HEX, FONTANA_HEX, ...ROVINE_HEX, ...CAMPI_HEX, ...Object.values(CONTORNO), ...ORDER.map(k => AG[k].hex)].forEach(h => LAND.add(K(...h)));
+if (!MAPPA) [CANTIERE_HEX, UDIENZE_HEX, POZZO_HEX, FONTANA_HEX, ...ROVINE_HEX, ...CAMPI_HEX, ...Object.values(CONTORNO), ...ORDER.map(k => AG[k].hex)].forEach(h => tessereDi(h, 1).forEach(t => LAND.add(K(...t))));
 
 const ROADS = { A: [0, 3], B: [5, 3], C: [4, 3], D: [5, 3, 1], E: [0, 5, 3], F: [0, 3, 1], G: [4, 3, 2], H: [0, 4, 3, 2], I: [5, 4, 2, 1], J: [0, 3, 2, 1], K: [5, 4, 3, 2, 1], L: [0, 1, 2, 3, 4, 5], M: [3] };
 const COAST = { A: [1], B: [1, 2], C: [0, 1, 2], D: [5, 0, 1, 2] };
@@ -149,21 +159,59 @@ function matchSet(table, need) {
 }
 const ROADSET = new Map(), LINKS = [];
 function link(a, b) {
-  const d = DIRS.findIndex(([dq, dr]) => a[0] + dq === b[0] && a[1] + dr === b[1]);
+  const d = DIR8.findIndex(([dx, dy]) => a[0] + dx === b[0] && a[1] + dy === b[1]);
   if (d < 0) return;
   const ka = K(...a), kb = K(...b);
   if (!ROADSET.has(ka)) ROADSET.set(ka, new Set()); if (!ROADSET.has(kb)) ROADSET.set(kb, new Set());
-  ROADSET.get(ka).add(d); ROADSET.get(kb).add((d + 3) % 6); LINKS.push([a, b]);
+  ROADSET.get(ka).add(d); ROADSET.get(kb).add((d + 4) % 8); LINKS.push([a, b]);
 }
 const OCC = new Map();
 const occ = (h, w) => OCC.set(K(...h), w);
-for (let d = 0; d < 6; d++) { const [dq, dr] = DIRS[d]; for (let i = 0; i < 4; i++) link([i * dq, i * dr], [(i + 1) * dq, (i + 1) * dr]); }
-link([4, 0], [5, -1]); link([-4, 0], [-5, 1]); link([0, 4], [1, 3]); link([-4, 4], [-4, 5]);
+// strade di base: le stesse dell'isola sugli esagoni, ridisegnate a quadrati
+const ESA6 = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]];
+[...ESA6.map(([q, r]) => [[0, 0], [4 * q, 4 * r]]), [[4, 0], [5, -1]], [[-4, 0], [-5, 1]], [[0, 4], [1, 3]], [[-4, 4], [-4, 5]]]
+  .forEach(([a, b]) => { const c = rigaCelle(daEsagono(...a), daEsagono(...b)); for (let i = 1; i < c.length; i++) link(c[i - 1], c[i]); });
 // strade: insieme di tessere; i collegamenti nascono tra tessere vicine
 const ROADT = new Set(MAPPA && Array.isArray(MAPPA.strade) ? MAPPA.strade.map(String) : ROADSET.keys());
 function rebuildRoads() { ROADSET.clear(); LINKS.length = 0;
-  ROADT.forEach(k => { const [q, r] = k.split(',').map(Number); for (let d = 0; d < 3; d++) { const n = [q + DIRS[d][0], r + DIRS[d][1]]; if (ROADT.has(K(...n))) link([q, r], n); } }); }
+  ROADT.forEach(k => { const [q, r] = k.split(',').map(Number); for (let d = 0; d < 4; d++) { const n = [q + DIR8[d][0], r + DIR8[d][1]]; if (ROADT.has(K(...n))) link([q, r], n); } }); }
 rebuildRoads();
+/* recinti: muretti, staccionate, siepi e cancelli; una tessera = un pezzo, i pezzi vicini si uniscono da soli */
+const TIPI_MURO = {
+  muro: { nome: 'Muretto', tex: 'rock', col: 0x4a4236, h: .5, t: .36, rep: [.45, .22] },
+  staccionata: { nome: 'Staccionata', tex: 'dirt', col: 0x8a5a34, h: .7, t: .1, rep: [.3, .1] },
+  siepe: { nome: 'Siepe', tex: 'grass', col: 0x23401a, h: .72, t: .56, rep: [.4, .3] },
+  cancello: { nome: 'Cancello', tex: 'rock', col: 0x4a4236, h: .95, t: .4, rep: [.45, .22], passa: true },
+};
+const MURI = new Map((MAPPA && Array.isArray(MAPPA.muri) ? MAPPA.muri : []).filter(m => Array.isArray(m) && TIPI_MURO[m[1]]).map(m => [String(m[0]), m[1]]));
+const MURI_OBJ = []; const MURO_MAT = {};
+function muroMat(tipo, legno) { const key = tipo + (legno ? ':l' : ''); if (MURO_MAT[key]) return MURO_MAT[key];
+  const T = TIPI_MURO[tipo], src = legno ? GND.U && GND.U.tDirt.value : T.tex === 'rock' ? GND.rock : GND.U && GND.U[T.tex === 'grass' ? 'tGrass' : 'tDirt'].value;
+  let map = null; if (src) { map = src.clone(); map.needsUpdate = true; map.wrapS = map.wrapT = THREE.RepeatWrapping; map.repeat.set(...T.rep); }
+  return (MURO_MAT[key] = new THREE.MeshStandardMaterial({ map, color: legno ? 0x40281a : T.col, roughness: 1, metalness: 0 })); }
+function muroBox(g, mat, w, h, d, x, y, z, rotY) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.rotation.y = rotY || 0; m.castShadow = m.receiveShadow = true; g.add(m); return m; }
+function buildMuri() {
+  MURI_OBJ.forEach(g => { scene.remove(g); g.traverse(m => { if (m.isMesh) m.geometry.dispose(); }); }); MURI_OBJ.length = 0;
+  const has = (x, y) => MURI.has(K(x, y));
+  MURI.forEach((tipo, k) => { const [x, y] = k.split(',').map(Number), T = TIPI_MURO[tipo], g = new THREE.Group(), mat = muroMat(tipo), gate = tipo === 'cancello';
+    // vicini: i 4 lati sempre; le diagonali solo se l'angolo non è già chiuso da un lato
+    const vicini = DIR8.map(([dx, dy], d) => !has(x + dx, y + dy) ? -1 : d % 2 === 0 ? d : (has(x + dx, y) || has(x, y + dy)) ? -1 : d).filter(d => d >= 0);
+    const dirs = vicini.length ? vicini : [0, 4]; // pezzo isolato: un tratto dritto
+    const a0 = gate ? .24 : 0; // il cancello lascia il passaggio al centro
+    const hh = gate ? TIPI_MURO.muro.h : T.h, tt = gate ? TIPI_MURO.muro.t : T.t, mm = gate ? muroMat('muro') : mat;
+    dirs.forEach(d => { const [dx, dy] = DIR8[d], v = new THREE.Vector3(dx, 0, dy).normalize(), ry = -Math.atan2(v.z, v.x);
+      const a1 = vicini.length ? CELLA * Math.hypot(dx, dy) / 2 + .01 : CELLA * .45, L = a1 - a0, c = a0 + L / 2; if (L <= .02) return;
+      if (tipo === 'staccionata') [.28, .56].forEach(h => muroBox(g, mat, L, .11, .09, v.x * c, h, v.z * c, ry));
+      else muroBox(g, mm, L, hh, tt, v.x * c, hh / 2, v.z * c, ry); });
+    const dritto = vicini.length === 2 && (vicini[1] - vicini[0]) === 4;
+    if (tipo === 'staccionata') muroBox(g, mat, .17, T.h, .17, 0, T.h / 2, 0);
+    else if (tipo === 'siepe') { const m = new THREE.Mesh(new THREE.CylinderGeometry(T.t * .55, T.t * .6, T.h, 8), mat); m.position.y = T.h / 2; m.castShadow = m.receiveShadow = true; g.add(m); }
+    else if (tipo === 'muro') { if (!dritto) muroBox(g, mat, T.t + .1, T.h + .1, T.t + .1, 0, (T.h + .1) / 2, 0); }
+    else { // cancello: due pilastri e le ante aperte in legno
+      const [dx, dy] = DIR8[dirs[0]], v = new THREE.Vector3(dx, 0, dy).normalize(), ry = -Math.atan2(v.z, v.x), n = new THREE.Vector3(-v.z, 0, v.x);
+      [1, -1].forEach(s => { muroBox(g, mat, .2, T.h, .2, v.x * a0 * s, T.h / 2, v.z * a0 * s); muroBox(g, mat, .26, .07, .26, v.x * a0 * s, T.h + .035, v.z * a0 * s);
+        const p = v.clone().multiplyScalar(a0 * s * .55).add(n.clone().multiplyScalar(.1)); muroBox(g, muroMat(tipo, true), .22, .4, .04, p.x, .26, p.z, ry + s * .9); }); }
+    const p = W(x, y); g.position.set(p.x, 0, p.z); scene.add(g); MURI_OBJ.push(g); }); }
 // tessere occupate da agenti e luoghi speciali (gli elementi liberi stanno in DECO)
 function rebuildOcc(gen) { OCC.clear();
   ORDER.forEach(k => tessereDi(AG[k].hex, k === 'sire' ? RAGGIO.sire : RAGGIO.agente).forEach(h => occ(h, k)));
@@ -172,7 +220,6 @@ function rebuildOcc(gen) { OCC.clear();
   if (gen) { occ(FONTANA_HEX, 'fontana'); CAMPI_HEX.forEach(h => occ(h, 'campo')); Object.entries(CONTORNO).forEach(([m, h]) => { if (!OCC.has(K(...h))) occ(h, m); }); } }
 rebuildOcc(!MAPPA);
 const isRoadTile = (key) => ROADSET.has(key) && !OCC.has(key);
-const dirOf = (h) => DIRS.findIndex(([dq, dr]) => dq * 4 === h[0] && dr * 4 === h[1]);
 
 /* ================= caricamento ================= */
 let KIT = null; const CH = {};
@@ -273,9 +320,7 @@ function paintGround(mat, u) {
 function coastTexture() {
   const N = 1024, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d'); const sc = N / (2 * SHORE.half);
   x.fillStyle = '#000'; x.fillRect(0, 0, N, N); x.fillStyle = '#fff';
-  LAND.forEach(k => { const [q, r] = k.split(',').map(Number); const p = W(q, r); x.beginPath();
-    for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; const px = (p.x + Math.cos(a) * 1.16 + SHORE.half) * sc, py = (p.z + Math.sin(a) * 1.16 + SHORE.half) * sc; i ? x.lineTo(px, py) : x.moveTo(px, py); }
-    x.closePath(); x.fill(); });
+  const hc = CELLA * .51; LAND.forEach(k => { const [q, r] = k.split(',').map(Number); const p = W(q, r); x.fillRect((p.x - hc + SHORE.half) * sc, (p.z - hc + SHORE.half) * sc, 2 * hc * sc, 2 * hc * sc); });
   const t = document.createElement('canvas'); t.width = t.height = N / 8; const tx = t.getContext('2d'); tx.imageSmoothingEnabled = true; tx.drawImage(c, 0, 0, N / 8, N / 8);
   const out = document.createElement('canvas'); out.width = out.height = N; const o = out.getContext('2d'); o.imageSmoothingEnabled = true; o.drawImage(t, 0, 0, N, N);
   const tex = new THREE.CanvasTexture(out); tex.minFilter = THREE.LinearFilter; tex.flipY = false; // riga del canvas = asse z del mondo return tex;
@@ -392,6 +437,7 @@ function updateSprites(fadeDur) {
   camera.getWorldDirection(_fw);
   const list = SPRITES.map(o => [o.position.dot(_fw), o]);
   PEOPLE.forEach(P => list.push([P.o.position.dot(_fw) - .4, P.o]));
+  MURI_OBJ.forEach(g => list.push([g.position.dot(_fw), g]));
   if (D.dragon) list.push([D.dragon.o.position.dot(_fw) - 3, D.dragon.o]);
   list.sort((a, b) => b[0] - a[0]);
   list.forEach(([, o], i) => { if (o.isSprite) o.renderOrder = 10 + i; else o.traverse(m => { if (m.isMesh || m.isSkinnedMesh) m.renderOrder = 10 + i; }); });
@@ -460,19 +506,25 @@ function buildWater() {
 
 /* ================= isola volante: roccia sotto e nuvole ================= */
 function buildUnderside(tRock) {
-  // distanza dalla costa in tessere: più si va verso il centro, più la roccia scende
+  // distanza dalla costa: più si va verso il centro, più la roccia scende (misurata in esagoni di prima = 3 quadrati)
   const cd = new Map(), Q = [];
   LAND.forEach(k => { const [a, b] = k.split(',').map(Number); if (DIRS.some(([dq, dr]) => !isLand(a + dq, b + dr))) { cd.set(k, 0); Q.push(k); } });
-  while (Q.length) { const k = Q.shift(); const [a, b] = k.split(',').map(Number);
+  for (let qi = 0; qi < Q.length; qi++) { const k = Q[qi]; const [a, b] = k.split(',').map(Number);
     DIRS.forEach(([dq, dr]) => { const n = K(a + dq, b + dr); if (LAND.has(n) && !cd.has(n)) { cd.set(n, cd.get(k) + 1); Q.push(n); } }); }
-  const rr = rng(4242), dep = new Map(); let maxD = 0;
-  LAND.forEach(k => { const d = cd.get(k); const v = .9 + Math.pow(Math.min(d, 9), 1.45) * 1.25 + rr() * 1.4 + (d === 0 ? 0 : rr() < .12 ? 2.2 : 0); dep.set(k, v); maxD = Math.max(maxD, v); });
-  const pos = [], nor = [], RAD = 1.175, TOP = .09;
+  // rumore morbido (niente colonne a scatti tra un quadrato e l'altro)
+  const hsh = (x, y) => { const v = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return v - Math.floor(v); };
+  const vn = (x, y) => { const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+    return (hsh(ix, iy) * (1 - sx) + hsh(ix + 1, iy) * sx) * (1 - sy) + (hsh(ix, iy + 1) * (1 - sx) + hsh(ix + 1, iy + 1) * sx) * sy; };
+  const dep = new Map(); let maxD = 0;
+  // a blocchi di 3×3 quadrati (grandi come gli esagoni di prima): colonne di roccia larghe, non un pulviscolo di colonnine
+  LAND.forEach(k => { const [a, b] = k.split(',').map(Number), d = Math.floor(cd.get(k) / 3), bx = Math.floor(a / 3), by = Math.floor(b / 3);
+    const v = .9 + Math.pow(Math.min(d, 9), 1.45) * 1.25 + hsh(bx, by) * 1.4 + (d > 0 && hsh(bx + 57, by - 31) < .12 ? 2.2 : 0); dep.set(k, v); maxD = Math.max(maxD, v); });
+  const pos = [], nor = [], HALF = CELLA / 2 * 1.017, TOP = .09;
   const quad = (x1, z1, x2, z2, y1, y2, nx, nz) => { pos.push(x1, y1, z1, x1, y2, z1, x2, y2, z2, x1, y1, z1, x2, y2, z2, x2, y1, z2); for (let i = 0; i < 6; i++) nor.push(nx, 0, nz); };
   LAND.forEach(k => { const [a, b] = k.split(',').map(Number); const p = W(a, b); const D = dep.get(k);
     DIRS.forEach(([dq, dr]) => { const n = K(a + dq, b + dr); const top = LAND.has(n) ? -dep.get(n) : TOP; if (top <= -D) return;
-      const ang = Math.atan2(Math.sqrt(3) * dr, 2 * dq + dr), a1 = ang - Math.PI / 6, a2 = ang + Math.PI / 6;
-      quad(p.x + Math.cos(a1) * RAD, p.z + Math.sin(a1) * RAD, p.x + Math.cos(a2) * RAD, p.z + Math.sin(a2) * RAD, top, -D, Math.cos(ang), Math.sin(ang)); }); });
+      const cx = p.x + dq * HALF, cz = p.z + dr * HALF, px = -dr * HALF, pz = dq * HALF;
+      quad(cx - px, cz - pz, cx + px, cz + pz, top, -D, dq, dr); }); });
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh) => {
@@ -587,16 +639,17 @@ const LBL = {}; const PICK = [];
 function hitbox(key, p, h) { const m = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, h, 6), new THREE.MeshBasicMaterial({ visible: false })); m.position.set(p.x, h / 2, p.z); m.userData.key = key; scene.add(m); PICK.push(m); return m; }
 /* terreno: tessere unite in un'unica mesh, ricostruibile dall'editor */
 const GND = { mesh: null, U: null, under: null, rock: null, sig: '' };
-function groundTiles() {
-  STATIC.length = 0;
-  LAND.forEach(k => {
-    const [q, r] = k.split(',').map(Number); const p = W(q, r);
-    addStatic('hex_grass', p, 0); // le strade sono dipinte dalla maschera (tRoad): niente tessere-strada del kit
-  });
-  // piazza del castello: merci ai lati delle strade
-  const rp = rng(31);
-  if (LAND.has(K(0, 0)) && OCC.get(K(0, 0)) === 'sire') for (let d = 0; d < 6; d++) { if (!LAND.has(K(...DIRS[d]))) continue; const v = W(...DIRS[d]).multiplyScalar(.5), side = new THREE.Vector3(-v.z, 0, v.x).normalize().multiplyScalar(.62);
-    addStatic(['barrel', 'crate_A_big', 'sack', 'wheelbarrow', 'crate_long_A', 'resource_lumber'][Math.floor(rp() * 6)], W(...DIRS[d]).multiplyScalar(1.5).add(side), rp() * 6); }
+// suolo a quadrati: righe di quadrati uniti in rettangoli; colore e strade li dipinge il materiale (paintGround)
+function groundMesh(U) {
+  const rows = new Map(); LAND.forEach(k => { const [x, y] = k.split(',').map(Number); if (!rows.has(y)) rows.set(y, []); rows.get(y).push(x); });
+  const pos = [], nor = [], h = CELLA / 2;
+  rows.forEach((xs, y) => { xs.sort((a, b) => a - b); let i = 0;
+    while (i < xs.length) { let j = i; while (j + 1 < xs.length && xs[j + 1] === xs[j] + 1) j++;
+      const x0 = xs[i] * CELLA - h, x1 = xs[j] * CELLA + h, z0 = y * CELLA - h, z1 = y * CELLA + h;
+      pos.push(x0, 0, z0, x0, 0, z1, x1, 0, z1, x0, 0, z0, x1, 0, z1, x1, 0, z0); for (let n = 0; n < 6; n++) nor.push(0, 1, 0); i = j + 1; } });
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  const mat = new THREE.MeshStandardMaterial({ color: 0x4f8f3f, roughness: 1, metalness: 0 }); paintGround(mat, U);
+  const mesh = new THREE.Mesh(g, mat); mesh.receiveShadow = true; scene.add(mesh); return mesh;
 }
 const groundSig = () => [...LAND].sort().join(';') + '|' + [...ROADT].sort().join(';') + '|' + [...OCC.keys()].sort().join(';');
 function rebuildGround(force) {
@@ -604,7 +657,7 @@ function rebuildGround(force) {
   if (GND.mesh) { scene.remove(GND.mesh); GND.mesh.geometry.dispose(); GND.mesh.material.dispose(); }
   ['tRoad', 'tCoast'].forEach(t => { if (GND.U[t].value) GND.U[t].value.dispose(); });
   GND.U.tRoad.value = roadTexture(); GND.U.tCoast.value = coastTexture();
-  groundTiles(); GND.mesh = bakeStatic(GND.U);
+  GND.mesh = groundMesh(GND.U);
   if (GND.under) { scene.remove(GND.under); GND.under.geometry.dispose(); GND.under.material.dispose(); }
   buildUnderside(GND.rock);
 }
@@ -651,9 +704,9 @@ function buildWorld(groundU) {
   if (MAPPA && Array.isArray(MAPPA.deco)) MAPPA.deco.forEach(d => { if (d && typeof d.n === 'string' && SPR_INFO[d.n]) DECO.push({ n: d.n, w: +d.w || 2.15, q: +d.q, r: +d.r, rot: +d.rot || 0 }); });
   // senza mappa salvata l'isola parte vuota: solo gli edifici principali, il resto si mette con l'editor
   ROVINE_HEX.forEach(h => LAND.add(K(...h)));
-  if (sistemaSovrapposti()) toast('Con la nuova scala alcuni elementi sono stati spostati per non sovrapporsi');
+  if (sistemaSovrapposti() && MAPPA) toast('Con la nuova scala alcuni elementi sono stati spostati per non sovrapporsi');
   rebuildOcc(false); // da qui in poi campi, fontana e case di contorno sono elementi liberi
-  GND.sig = groundSig(); groundTiles(); GND.mesh = bakeStatic(groundU);
+  GND.sig = groundSig(); GND.mesh = groundMesh(groundU);
   spawnDeco();
   rebuildSmoke();
   buildBirds();
@@ -668,7 +721,7 @@ function buildWorld(groundU) {
   fan = null; // le pale sono dipinte
   D.flagOut = model('flag_red'); scene.add(D.flagOut); D.flagFat = model('flag_red'); scene.add(D.flagFat); flags.push(D.flagOut, D.flagFat);
   D.corr = corruption(AG.outreach.pos);
-  D.sireFlags = [0, 2, 4].map(d => { const f = model('flag_blue'); f.userData.off = W(...DIRS[d]).multiplyScalar(.62); f.scale.setScalar(1.15); scene.add(f); flags.push(f); return f; });
+  D.sireFlags = [0, 2, 4].map(d => { const f = model('flag_blue'); f.userData.off = DIRH[d].clone().multiplyScalar(1.24); f.scale.setScalar(1.15); scene.add(f); flags.push(f); return f; });
 
   // udienze: tende davanti al castello
   D.tents = [];
@@ -755,7 +808,7 @@ function spritePerson(kind, opt) {
     if (info) o.userData.width = P.h * info.w / info.h; o.userData.flip = P.left; o.userData.img = null; setSpriteImg(o, name); };
   P.mixer = { update: (dt) => { const walking = P.t < 1 && P.cur !== 'Idle';
     if (P.post) { // guardie: ai lati dell'ingresso del castello, rivolte verso l'esterno come l'ingresso
-      const c = AG.sire.pos, f = AG.sire.obj.userData.facing, sx = -f.z, sz = f.x, dd = 2 * RAGGIO.sire + 1.2;
+      const c = AG.sire.pos, f = AG.sire.obj.userData.facing, sx = -f.z, sz = f.x, dd = RW(RAGGIO.sire) + .2;
       P.o.position.set(c.x + f.x * dd + sx * P.post, .02, c.z + f.z * dd + sz * P.post);
       _sa.copy(P.o.position).project(camera); _sb.copy(P.o.position).add(f).project(camera); P.back = _sb.y > _sa.y; P.left = _sb.x < _sa.x; }
     if (walking) { _sa.copy(P.from).project(camera); _sb.copy(P.to).project(camera); const vx = _sb.x - _sa.x, vy = (_sb.y - _sa.y) * (cam.hh || 1) / (cam.hw || 1), vl = Math.hypot(vx, vy) || 1;
@@ -766,27 +819,32 @@ function spritePerson(kind, opt) {
     o.center.y = .02 - hop / Math.max(.01, o.scale.y); } };
   P.frame(); o.position.y = .02; scene.add(o); PEOPLE.push(P); return P;
 }
-function spokePoint(d, f) { return W(DIRS[d][0], DIRS[d][1]).multiplyScalar(f); }
+function spokePoint(d, f) { return DIRH[d % 6].clone().multiplyScalar(2 * f); }
 function walkTo(P, from, to, anim) { P.from.copy(from); P.to.copy(to); P.len = Math.max(.01, from.distanceTo(to)); P.t = 0; P.o.position.copy(from); if (!P.o.isSprite) P.o.rotation.y = Math.atan2(to.x - from.x, to.z - from.z); P.play(anim || P.walkAnim || 'Walking_A'); }
 /* ---- percorsi: si esce e si entra solo dalle porte, si cammina sulle tessere libere (strade preferite) ---- */
-const DIRW = DIRS.map(([q, r]) => W(q, r).normalize());
+const DIRW = DIR8.map(([x, y]) => new THREE.Vector3(x, 0, y).normalize());
 function dirVicina(v) { let b = 0, bd = -2; DIRW.forEach((w, i) => { const d = w.x * v.x + w.z * v.z; if (d > bd) { bd = d; b = i; } }); return b; }
-function bloccate() { const s = new Set(); tuttiEnt().forEach(id => tessereDi(entHex(id), raggioDi(id)).forEach(t => s.add(K(...t)))); return s; }
+function bloccate() { const s = new Set(); tuttiEnt().forEach(id => tessereDi(entHex(id), raggioDi(id)).forEach(t => s.add(K(...t)))); MURI.forEach((t, k) => { if (!TIPI_MURO[t].passa) s.add(k); }); return s; }
 // porta di un edificio: tessera libera davanti all'ingresso (h) e soglia sul bordo, dove il personaggio compare e scompare
 function portaDi(k) { const a = AG[k], rg = k === 'sire' ? RAGGIO.sire : RAGGIO.agente;
   const d = dirVicina((a.obj && a.obj.userData.facing) || new THREE.Vector3(0, 0, 1));
-  const ideale = [a.hex[0] + DIRS[d][0] * (rg + 1), a.hex[1] + DIRS[d][1] * (rg + 1)], blk = bloccate(); let h = null;
+  const ideale = [a.hex[0] + DIR8[d][0] * (rg + 1), a.hex[1] + DIR8[d][1] * (rg + 1)], blk = bloccate(); let h = null;
   // la tessera davanti alla porta deve essere libera: altrimenti la più vicina libera attorno all'edificio
   for (let ring = rg + 1; ring <= rg + 3 && !h; ring++) { let best = 1e9; tessereDi(a.hex, ring).forEach(t => { if (HD(t, a.hex) !== ring || !LAND.has(K(...t)) || blk.has(K(...t))) return; const c = HD(t, ideale); if (c < best) { best = c; h = t; } }); }
   h = h || ideale;
   const verso = W(h[0] - a.hex[0], h[1] - a.hex[1]).normalize();
-  return { h, soglia: a.pos.clone().setY(0).add(verso.multiplyScalar(2 * rg + .7)), d, rg }; }
+  return { h, soglia: a.pos.clone().setY(0).add(verso.multiplyScalar(RW(rg) - .35)), d, rg }; }
+// Dijkstra su quadrati, 8 direzioni; in diagonale solo se i due lati sono liberi (niente angoli tagliati negli edifici o nei recinti)
 function cammino(h0, h1) {
   const blk = bloccate(), k0 = K(...h0), k1 = K(...h1); blk.delete(k0); blk.delete(k1);
-  const dist = new Map([[k0, 0]]), prev = new Map(), open = [[0, h0]];
-  while (open.length) { open.sort((a, b) => a[0] - b[0]); const [c, h] = open.shift(), kh = K(...h); if (kh === k1) break; if (c > dist.get(kh)) continue;
-    for (const [dq, dr] of DIRS) { const n = [h[0] + dq, h[1] + dr], kn = K(...n); if (!LAND.has(kn) || blk.has(kn)) continue;
-      const nc = c + (ROADT.has(kn) ? 1 : 2.2); if (nc < (dist.has(kn) ? dist.get(kn) : 1e9)) { dist.set(kn, nc); prev.set(kn, kh); open.push([nc, n]); } } }
+  const ok = (x, y) => { const k = K(x, y); return LAND.has(k) && !blk.has(k); };
+  const dist = new Map([[k0, 0]]), prev = new Map(), heap = [[0, h0[0], h0[1]]];
+  const push = (e) => { heap.push(e); let i = heap.length - 1; while (i) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+  while (heap.length) { const [c, x, y] = pop(), kh = K(x, y); if (kh === k1) break; if (c > dist.get(kh)) continue;
+    for (const [dx, dy] of DIR8) { const nx = x + dx, ny = y + dy, kn = K(nx, ny); if (!ok(nx, ny)) continue;
+      const diag = dx && dy; if (diag && (!ok(x + dx, y) || !ok(x, y + dy))) continue;
+      const nc = c + (ROADT.has(kn) ? 1 : 2.2) * (diag ? 1.414 : 1); if (nc < (dist.has(kn) ? dist.get(kn) : 1e9)) { dist.set(kn, nc); prev.set(kn, kh); push([nc, nx, ny]); } } }
   if (!dist.has(k1)) return null; const out = []; for (let k = k1; k; k = prev.get(k)) { const [q, r] = k.split(',').map(Number); out.unshift(W(q, r)); } return out; }
 // da porta a porta; null se gli edifici non sono collegati da terra libera
 function percorso(da, a, lat) { const pa = portaDi(da), pb = portaDi(a), mid = cammino(pa.h, pb.h); if (!mid) return null;
@@ -794,7 +852,7 @@ function percorso(da, a, lat) { const pa = portaDi(da), pb = portaDi(a), mid = c
   if (lat) for (let i = 1; i < pts.length - 1; i++) { const v = pts[i + 1].clone().sub(pts[i - 1]); pts[i] = pts[i].clone().add(new THREE.Vector3(-v.z, 0, v.x).normalize().multiplyScalar(lat)); }
   return pts; }
 // toglie le svolte inutili: tiene un punto solo se la linea dritta verso il successivo attraversa tessere occupate
-function libera(a, b, blk) { const n = Math.ceil(a.distanceTo(b) / .35); for (let i = 1; i < n; i++) { const x = a.x + (b.x - a.x) * i / n, z = a.z + (b.z - a.z) * i / n, h = cubeRound((x - z / SQ3) / 2, z / SQ3), k = K(...h); if (!LAND.has(k) || blk.has(k)) return false; } return true; }
+function libera(a, b, blk) { const n = Math.ceil(a.distanceTo(b) / .15); for (let i = 1; i < n; i++) { const x = a.x + (b.x - a.x) * i / n, z = a.z + (b.z - a.z) * i / n, h = cellaDi(x, z), k = K(...h); if (!LAND.has(k) || blk.has(k)) return false; } return true; }
 function liscia(pts) { if (pts.length <= 3) return pts; const blk = bloccate(), out = [pts[0], pts[1]]; let i = 1;
   while (i < pts.length - 2) { let j = pts.length - 2; while (j > i + 1 && !libera(pts[i], pts[j], blk)) j--; out.push(pts[j]); i = j; }
   out.push(pts[pts.length - 1]); return out; }
@@ -845,9 +903,9 @@ function addLife(G) {
       P.next = (Q) => { Q.play(pick(['Interact', 'PickUp', 'Use_Item'])); Q.wait = 3 + Math.random() * 3; }; P.wait = 2 + i; });
   }
   if (G.deer) {
-    const spots = []; LAND.forEach(k => { const [q, r] = k.split(',').map(Number); const p = W(q, r), ang = Math.atan2(p.z, p.x) * 180 / Math.PI; if (hdist(q, r) === 4 && ang > -35 && ang < 35 && !OCC.has(k) && !ROADSET.has(k)) spots.push(p); });
+    const spots = []; LAND.forEach(k => { const [q, r] = k.split(',').map(Number); const p = W(q, r), ang = Math.atan2(p.z, p.x) * 180 / Math.PI; const L = p.length(); if (L > 7.6 && L < 8.3 && ang > -35 && ang < 35 && !OCC.has(k) && !ROADSET.has(k)) spots.push(p); });
     spots.slice(0, 3).forEach((p, i) => { const P = G.deer === 'animale' ? spritePerson('animale', { h: .55, speed: .35, walkAnim: 'Walk', idleAnim: 'Idle', pause: 4 }) : person(G.deer, { h: .5, bones: true, keepProps: true, speed: .35, walkAnim: 'Walk', idleAnim: 'Eating', pause: 4 }); P.home = p.clone().add(new THREE.Vector3(-1.1, 0, .3)); P.o.position.copy(P.home); P.play('Eating');
-      P.next = (Q) => { const t = Q.home.clone().add(new THREE.Vector3((Math.random() - .5) * 1.4, 0, (Math.random() - .5) * 1.4)); const h = cubeRound((t.x - t.z / SQ3) / 2, t.z / SQ3);
+      P.next = (Q) => { const t = Q.home.clone().add(new THREE.Vector3((Math.random() - .5) * 1.4, 0, (Math.random() - .5) * 1.4)); const h = cellaDi(t.x, t.z);
         if (!LAND.has(K(...h)) || bloccate().has(K(...h))) { Q.wait = 3; return; } walkTo(Q, Q.o.position.clone(), t, 'Walk'); }; P.wait = 2 + i * 2; });
   }
   if (SPR_INFO.minaccia_1) { // minaccia dipinta (drago, kraken, drone…): due fotogrammi che si alternano
@@ -1103,15 +1161,14 @@ function editto(k) {
   $('sigillo').onclick = (e) => { e.currentTarget.classList.add('timbrato'); AUDIO.stamp(); later(.7, () => { closeOverlay(); messaggero(k); }); };
 }
 function messaggero(k) {
-  const a = AG[k], d = dirOf(a.hex); toast(`Il messaggero corre verso ${a.nome}`); AUDIO.horn(); goTo(spokePoint(d < 0 ? 0 : d, 2), 1.7);
+  const a = AG[k]; toast(`Il messaggero corre verso ${a.nome}`); AUDIO.horn(); goTo(a.pos.clone().add(AG.sire.pos).multiplyScalar(.5), 1.7);
   const tpl = hasWalker('messaggero') ? 'messaggero' : CH.rogue || CH.knight;
-  if (!tpl || d < 0) { later(1.5, () => approva(k)); return; }
+  if (!tpl) { later(1.5, () => approva(k)); return; }
   const P = typeof tpl === 'string' ? spritePerson(tpl, { h: .6, speed: 2.1, walkAnim: 'Running_A', pause: 0 }) : person(tpl, { h: .64, speed: 2.1, walkAnim: 'Running_A', pause: 0 });
   const togli = (Q) => { scene.remove(Q.o); const i = PEOPLE.indexOf(Q); if (i >= 0) PEOPLE.splice(i, 1); };
   const pts = percorso('sire', k);
   if (pts) { P.o.position.copy(pts[0]); seguiPercorso(P, pts, (Q) => { approva(k); togli(Q); }); return; }
-  walkTo(P, spokePoint(d, .7), spokePoint(d, 3.4), 'Running_A');
-  P.arrive = (Q) => { Q.arrive = null; Q.play('Cheer'); approva(k); later(2.2, () => togli(Q)); };
+  togli(P); later(1.5, () => approva(k)); // nessuna strada libera tra il castello e l'edificio: si approva lo stesso
 }
 function approva(k) {
   const a = AG[k]; a.stato = 'lavora'; S.udienze = Math.max(0, S.udienze - 1); hideTent();
@@ -1228,16 +1285,16 @@ function loop(t) {
 
 /* ================= editor della mappa ================= */
 // Strumenti: seleziona/sposta, terra +, terra −, strada, inserisci. La mappa resta salvata su questo dispositivo.
-const ED = { on: false, tool: 'sel', sel: null, item: 'pineta', undo: [], redo: [], drag: null, stroke: null };
+const ED = { on: false, tool: 'sel', sel: null, item: 'pineta', muro: 'muro', undo: [], redo: [], drag: null, stroke: null };
 const CATALOGO = ['zucchero', 'casa_a', 'casa_b', 'fattoria', 'pineta', 'cipressi', 'uliveto', 'vigneto', 'grano', 'montagna', 'rupe', 'scogli', 'fontana'];
 const NOMI_ED = { zucchero: 'Monte di C.', casa_a: 'Casa', casa_b: 'Casa', fattoria: 'Fattoria', pineta: 'Bosco', cipressi: 'Alberi', uliveto: 'Frutteto', vigneto: 'Vigneto', grano: 'Campo', montagna: 'Montagna', rupe: 'Rupe', scogli: 'Massi', fontana: 'Fontana' };
 const NOMI_SP = { cantiere: 'Cantiere', udienze: 'Approvazioni', pozzo: 'Pozzo dei desideri' };
-const MAX_DIST = 40; // si può allargare l'isola molto oltre la forma di partenza
+const MAX_DIST = 120; // si può allargare l'isola molto oltre la forma di partenza
 function mapNow() {
-  return { v: 1, land: [...LAND], strade: [...ROADT],
+  return { v: 2, land: [...LAND], strade: [...ROADT],
     agenti: Object.fromEntries(ORDER.map(k => [k, [AG[k].hex[0], AG[k].hex[1], AG[k].rot || 0]])),
     spec: { cantiere: [...CANTIERE_HEX], udienze: [...UDIENZE_HEX], pozzo: [...POZZO_HEX], rotCant: D.rotCant || 0 },
-    rovine: ROVINE_HEX.map(h => [...h]), deco: DECO.map(d => ({ n: d.n, w: d.w, q: d.q, r: d.r, rot: d.rot || 0 })) };
+    rovine: ROVINE_HEX.map(h => [...h]), deco: DECO.map(d => ({ n: d.n, w: d.w, q: d.q, r: d.r, rot: d.rot || 0 })), muri: [...MURI] };
 }
 function salvaMappa() { try { localStorage.setItem(MAPPA_KEY, JSON.stringify(mapNow())); return true; } catch (e) { return false; } }
 // applica una mappa completa (annulla, ripristina, importa)
@@ -1249,18 +1306,18 @@ function applyMap(m) {
   m.rovine.forEach((h, i) => { if (ROVINE_HEX[i]) setHex(ROVINE_HEX[i], h); });
   DECO.forEach(d => removeSprite(d.o)); DECO.length = 0;
   m.deco.forEach(d => { if (SPR_INFO[d.n]) DECO.push({ n: d.n, w: +d.w || 2.15, q: +d.q, r: +d.r, rot: +d.rot || 0 }); });
+  MURI.clear(); (Array.isArray(m.muri) ? m.muri : []).forEach(x => { if (Array.isArray(x) && TIPI_MURO[x[1]]) MURI.set(String(x[0]), x[1]); });
   refresh(true);
 }
 // dopo ogni modifica: occupazione, terreno (solo se cambiato), posizioni, sprite liberi, fumo, salvataggio
-function refresh(deco) { rebuildOcc(false); rebuildGround(); placeAll(); if (deco) spawnDeco(); rebuildSmoke(); salvaMappa(); edSelShow(); }
+function refresh(deco) { rebuildOcc(false); rebuildGround(); buildMuri(); placeAll(); if (deco) spawnDeco(); rebuildSmoke(); salvaMappa(); edSelShow(); }
 function snapshot() { ED.undo.push(JSON.stringify(mapNow())); if (ED.undo.length > 60) ED.undo.shift(); ED.redo.length = 0; edButtons(); }
 function annulla() { if (!ED.undo.length) return; ED.redo.push(JSON.stringify(mapNow())); applyMap(JSON.parse(ED.undo.pop())); ED.sel = null; edSelShow(); edButtons(); }
 function ripristina() { if (!ED.redo.length) return; ED.undo.push(JSON.stringify(mapNow())); applyMap(JSON.parse(ED.redo.pop())); ED.sel = null; edSelShow(); edButtons(); }
 
 /* ---- tessere ed entità ---- */
-const cubeRound = (q, r) => { const s = -q - r; let rq = Math.round(q), rr = Math.round(r); const rs = Math.round(s); const dq = Math.abs(rq - q), dr = Math.abs(rr - r), ds = Math.abs(rs - s); if (dq > dr && dq > ds) rq = -rr - rs; else if (dr > ds) rr = -rq - rs; return [rq, rr]; };
 function hexAt(x, y) { ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera); const o = ray.ray.origin, d = ray.ray.direction; if (Math.abs(d.y) < 1e-6) return null;
-  const t = -o.y / d.y, px = o.x + d.x * t, pz = o.z + d.z * t, rf = pz / SQ3; return cubeRound((px - rf) / 2, rf); }
+  const t = -o.y / d.y; return cellaDi(o.x + d.x * t, o.z + d.z * t); }
 function entHex(id) { const [t, k] = id.split(':');
   if (t === 'ag') return AG[k].hex; if (t === 'rv') return ROVINE_HEX[+k]; if (t === 'dc') { const d = DECO[+k]; return [d.q, d.r]; }
   return k === 'cantiere' ? CANTIERE_HEX : k === 'udienze' ? UDIENZE_HEX : POZZO_HEX; }
@@ -1276,28 +1333,32 @@ function entAt(x, y) {
   const hits = ray.intersectObjects(SPRITES.filter(o => o.visible && o.userData.ent), false);
   if (hits.length) return hits[0].object.userData.ent;
   const h = hexAt(x, y); return h ? entAtHex(h) : null; }
-const freeOne = (h, except) => LAND.has(K(...h)) && !ROADT.has(K(...h)) && !entAtHex(h, except);
+const freeOne = (h, except) => LAND.has(K(...h)) && !ROADT.has(K(...h)) && !MURI.has(K(...h)) && !entAtHex(h, except);
 // libera = tutte le tessere che l'oggetto occuperebbe (con il suo raggio) sono terra, senza strade e senza altri oggetti
 const freeHex = (h, except, rg) => { if (rg === undefined) rg = except ? raggioDi(except) : 0;
-  return tessereDi(h, rg).every(t => LAND.has(K(...t)) && !ROADT.has(K(...t))) && !tuttiEnt().some(e => e !== except && HD(entHex(e), h) <= raggioDi(e) + rg); };
+  return tessereDi(h, rg).every(t => LAND.has(K(...t)) && !ROADT.has(K(...t)) && !MURI.has(K(...t))) && !tuttiEnt().some(e => e !== except && HD(entHex(e), h) <= raggioDi(e) + rg); };
 const tuttiEnt = () => [...ORDER.map(k => 'ag:' + k), 'sp:cantiere', 'sp:udienze', 'sp:pozzo', ...ROVINE_HEX.map((h, i) => 'rv:' + i), ...DECO.map((d, i) => 'dc:' + i)];
 // mappe salvate prima della scala nuova: chi si sovrappone viene spostato sulla prima zona libera più vicina
 function sistemaSovrapposti() { let n = 0; const fatti = [];
   tuttiEnt().forEach(id => { const h = entHex(id), rg = raggioDi(id);
     const libero = (c) => tessereDi(c, rg).every(t => LAND.has(K(...t))) && fatti.every(e => HD(entHex(e), c) > raggioDi(e) + rg);
-    if (!libero(h)) { let best = null; for (let d = 1; d <= 14 && !best; d++) for (const c of tessereDi(h, d)) if (HD(c, h) === d && libero(c)) { best = c; break; }
+    if (!libero(h)) { let best = null; for (let d = 1; d <= 40 && !best; d++) for (const c of tessereDi(h, d)) if (HD(c, h) === d && libero(c)) { best = c; break; }
       if (best) { moveEnt(id, best); n++; } }
     fatti.push(id); });
   return n; }
 
 /* ---- evidenziazioni ---- */
-function hexMark(color, op) { const g = new THREE.RingGeometry(.92, 1.12, 6, 1, Math.PI / 6); g.rotateX(-Math.PI / 2);
+const anelloQ = (rg) => { const R = RW(rg) * Math.SQRT2, g = new THREE.RingGeometry(R - (rg ? .11 : .07) * Math.SQRT2, R, 4, 1, Math.PI / 4); g.rotateX(-Math.PI / 2); return g; };
+function hexMark(color, op) { const g = anelloQ(0);
   const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op || .95, depthTest: false, depthWrite: false })); m.renderOrder = 100000; m.visible = false; scene.add(m); return m; }
 let MK = null; const MARKS = [];
 function edInitMarks() { if (MK) return; MK = { sel: hexMark(0xffc35a), hov: hexMark(0xffffff, .8) }; }
 function showMark(m, h, color) { if (!h) { m.visible = false; return; } const p = W(...h); m.position.set(p.x, .07, p.z); if (color !== undefined) m.material.color.setHex(color); m.visible = true; }
 function strokeMark(h, color) { let m = MARKS.find(x => !x.visible); if (!m) { m = hexMark(color, .9); MARKS.push(m); } showMark(m, h, color); }
-function clearStrokeMarks() { MARKS.forEach(m => { m.visible = false; }); }
+function clearStrokeMarks() { MARKS.forEach(m => { m.visible = false; }); AREE.forEach(m => { m.visible = false; }); }
+// ingombro di un oggetto: un solo contorno quadrato grande quanto le tessere che occupa
+const AREE = [];
+function areaMark(h, rg, color) { let m = AREE.find(x => !x.visible); if (!m) { m = hexMark(color, .9); AREE.push(m); } if (m.userData.rg !== rg) { m.geometry.dispose(); m.geometry = anelloQ(rg); m.userData.rg = rg; } showMark(m, h, color); }
 
 /* ---- azioni ---- */
 function moveEnt(id, h) { const [t, k] = id.split(':');
@@ -1310,13 +1371,20 @@ function ruota() { const id = ED.sel; if (!id) return; snapshot(); const [t, k] 
 function elimina() { const id = ED.sel; if (!id) return; const [t, k] = id.split(':');
   if (t !== 'dc') { toast('Gli edifici degli agenti e i luoghi speciali si possono spostare, non eliminare'); return; }
   snapshot(); removeSprite(DECO[+k].o); DECO.splice(+k, 1); ED.sel = null; refresh(true); }
-function paint(h) { const key = K(...h), st = ED.stroke; if (st.done.has(key)) return; st.done.add(key);
+function paint(h) { if (ED.tool === 'terra' || ED.tool === 'scava') tessereDi(h, 1).forEach(paint1); else paint1(h); } // terra: pennello di 3×3 quadrati
+function paint1(h) { const key = K(...h), st = ED.stroke; if (st.done.has(key)) return; st.done.add(key);
   if (ED.tool === 'terra') { if (hdist(...h) > MAX_DIST || LAND.has(key)) return; LAND.add(key); st.ch = true; strokeMark(h, 0x7dff8a); }
   else if (ED.tool === 'scava') { if (!LAND.has(key)) return; const e = entAtHex(h); if (e && !e.startsWith('dc:')) { if (!st.warn) toast('Qui c\'è ' + entName(e) + ': spostalo prima di togliere la terra'); st.warn = true; return; }
-    if (LAND.size <= 7) return; if (e) { removeSprite(DECO[+e.slice(3)].o); DECO.splice(+e.slice(3), 1); st.deco = true; } LAND.delete(key); ROADT.delete(key); st.ch = true; strokeMark(h, 0xff6a5a); }
+    if (LAND.size <= 7) return; if (e) { removeSprite(DECO[+e.slice(3)].o); DECO.splice(+e.slice(3), 1); st.deco = true; } LAND.delete(key); ROADT.delete(key); MURI.delete(key); st.ch = true; strokeMark(h, 0xff6a5a); }
   else if (ED.tool === 'strada') { if (!LAND.has(key)) return; if (st.mode === undefined) st.mode = !ROADT.has(key);
-    const e = entAtHex(h); if (st.mode) { if (e && e.startsWith('dc:')) { removeSprite(DECO[+e.slice(3)].o); DECO.splice(+e.slice(3), 1); st.deco = true; } ROADT.add(key); } else ROADT.delete(key); st.ch = true; strokeMark(h, 0xe0b070); }
-  else if (ED.tool === 'metti') { if (!freeHex(h, null, RAGGIO[ED.item] || 0)) return; const n = ED.item; DECO.push({ n, w: n === 'montagna' || n === 'zucchero' ? 2.9 : n === 'rupe' ? 2.5 : n === 'scogli' ? 1.7 : n === 'fontana' ? 1.9 : CASE.has(n) && n !== 'fattoria' ? 2.15 : 2.3, q: h[0], r: h[1], rot: 0 }); st.ch = true; st.deco = true; strokeMark(h, 0x9fe8ff); }
+    const e = entAtHex(h); if (st.mode) { if (e && e.startsWith('dc:')) { removeSprite(DECO[+e.slice(3)].o); DECO.splice(+e.slice(3), 1); st.deco = true; } if (MURI.has(key) && !TIPI_MURO[MURI.get(key)].passa) MURI.delete(key); ROADT.add(key); } else ROADT.delete(key); st.ch = true; strokeMark(h, 0xe0b070); }
+  else if (ED.tool === 'muro') { if (!LAND.has(key)) return; if (st.mode === undefined) st.mode = MURI.get(key) !== ED.muro;
+    if (!st.mode) { if (!MURI.has(key)) return; MURI.delete(key); }
+    else { const e = entAtHex(h); if (e) { if (!st.warn) toast('Qui c\'è ' + entName(e) + ': il recinto gli gira attorno'); st.warn = true; return; }
+      if (ROADT.has(key) && !TIPI_MURO[ED.muro].passa) { if (!st.warnS) toast('Sulle strade va un cancello, così si passa'); st.warnS = true; return; }
+      MURI.set(key, ED.muro); }
+    st.ch = true; buildMuri(); strokeMark(h, 0xd8c8a8); }
+  else if (ED.tool === 'metti') { if (!freeHex(h, null, RAGGIO[ED.item] || 0)) return; const n = ED.item; DECO.push({ n, w: n === 'montagna' || n === 'zucchero' ? 2.9 : n === 'rupe' ? 2.5 : n === 'scogli' ? 1.7 : n === 'fontana' ? 1.9 : CASE.has(n) && n !== 'fattoria' ? 2.15 : 2.3, q: h[0], r: h[1], rot: 0 }); st.ch = true; st.deco = true; areaMark(h, RAGGIO[n] || 0, 0x9fe8ff); }
 }
 function endStroke() { const st = ED.stroke; ED.stroke = null; clearStrokeMarks(); if (!st) return;
   if (!st.ch) { ED.undo.pop(); edButtons(); return; }
@@ -1326,30 +1394,35 @@ function endStroke() { const st = ED.stroke; ED.stroke = null; clearStrokeMarks(
 /* ---- puntatore in modalità editor ---- */
 function edDown(x, y) { edInitMarks();
   if (ED.tool === 'sel') { const id = entAt(x, y); if (!id) return false; ED.sel = id; edSelShow(); ED.drag = { id, from: [...entHex(id)], to: null }; return true; }
-  const h = hexAt(x, y); if (!h) return false; snapshot(); ED.stroke = { done: new Set(), ch: false }; paint(h); return true; }
+  const h = hexAt(x, y); if (!h) return false; snapshot(); ED.stroke = { done: new Set(), ch: false, last: h }; paint(h); return true; }
 function edMove(x, y) { const h = hexAt(x, y); if (!h) return;
-  if (ED.drag) { const ok = freeHex(h, ED.drag.id); ED.drag.to = ok ? h : null; clearStrokeMarks(); MK.hov.visible = false; tessereDi(h, raggioDi(ED.drag.id)).forEach(t => strokeMark(t, ok ? 0x7dff8a : 0xff6a5a)); return; }
-  if (ED.stroke) paint(h); }
+  if (ED.drag) { const ok = freeHex(h, ED.drag.id); ED.drag.to = ok ? h : null; clearStrokeMarks(); MK.hov.visible = false; areaMark(h, raggioDi(ED.drag.id), ok ? 0x7dff8a : 0xff6a5a); return; }
+  if (ED.stroke) { rigaCelle(ED.stroke.last || h, h).forEach(paint); ED.stroke.last = h; } } // tratto continuo anche se il dito corre
 function edUp() {
   if (ED.drag) { const dr = ED.drag; ED.drag = null; MK.hov.visible = false; clearStrokeMarks();
     if (dr.to && K(...dr.to) !== K(...dr.from)) { snapshot(); moveEnt(dr.id, dr.to); refresh(dr.id.startsWith('dc:')); } return; }
   if (ED.stroke) endStroke(); }
 function edSelShow() { if (!MK) return; if (!ED.sel) { MK.sel.visible = false; clearStrokeMarks(); $('ed-info').textContent = ED.tool === 'sel' ? 'Tocca un elemento per selezionarlo, trascinalo per spostarlo' : $('ed-info').textContent; edButtons(); return; }
-  clearStrokeMarks(); if (!ED.drag) tessereDi(entHex(ED.sel), raggioDi(ED.sel)).forEach(t => strokeMark(t, 0xffc35a)); MK.sel.visible = false; $('ed-info').textContent = entName(ED.sel); edButtons(); }
+  clearStrokeMarks(); if (!ED.drag) areaMark(entHex(ED.sel), raggioDi(ED.sel), 0xffc35a); MK.sel.visible = false; $('ed-info').textContent = entName(ED.sel); edButtons(); }
 function edButtons() { const t = ED.sel && ED.sel.split(':')[0];
   $('ed-rot').disabled = !ED.sel || ED.sel === 'sp:udienze' || ED.sel === 'sp:pozzo' || t === 'rv'; $('ed-del').disabled = t !== 'dc';
   $('ed-undo').disabled = !ED.undo.length; $('ed-redo').disabled = !ED.redo.length; }
-const SUGG = { sel: 'Tocca un elemento per selezionarlo, trascinalo per spostarlo', terra: 'Tocca o trascina per aggiungere terra', scava: 'Tocca o trascina per togliere terra', strada: 'Tocca o trascina per tracciare o togliere una strada', metti: 'Scegli un elemento e tocca dove metterlo' };
+const SUGG = { sel: 'Tocca un elemento per selezionarlo, trascinalo per spostarlo', terra: 'Tocca o trascina per aggiungere terra (3×3 quadrati)', scava: 'Tocca o trascina per togliere terra (3×3 quadrati)', strada: 'Tocca o trascina per tracciare o togliere una strada', metti: 'Scegli un elemento e tocca dove metterlo', muro: 'Scegli il recinto, poi tocca o trascina sulle tessere; ripassa per toglierlo' };
 function setTool(t) { ED.tool = t; document.querySelectorAll('#ed-tools button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
-  $('ed-cat').hidden = t !== 'metti'; if (t !== 'sel') { ED.sel = null; if (MK) MK.sel.visible = false; } $('ed-info').textContent = SUGG[t]; edButtons(); }
+  $('ed-cat').hidden = t !== 'metti' && t !== 'muro'; if (t === 'muro') edMuri(); else if (t === 'metti') edCatalog(); if (t !== 'sel') { ED.sel = null; if (MK) MK.sel.visible = false; } $('ed-info').textContent = SUGG[t]; edButtons(); }
 function edCatalog() { const c = $('ed-cat'); c.innerHTML = CATALOGO.filter(n => SPR_INFO[n]).map(n => `<button type="button" data-item="${n}" aria-pressed="${n === ED.item}"><img src="${(SPR_SRC[n] || 'assets/sprites/') + n}.webp" alt=""><span>${esc(NOMI_ED[n])}</span></button>`).join(''); }
+const ICONA_MURO = { muro: '<path d="M2 12h20v8H2z" fill="#cfc4b2"/><path d="M2 16h20M8 12v4M15 12v4M5 16v4M12 16v4M18 16v4" stroke="#7a6a55" stroke-width="1.2"/>',
+  staccionata: '<path d="M4 8v13M10 8v13M16 8v13M22 8v13" stroke="#9a6638" stroke-width="2.4"/><path d="M2 12h21M2 17h21" stroke="#c08850" stroke-width="2"/>',
+  siepe: '<path d="M2 20v-6c0-3 3-5 5-4 1-3 5-3 6 0 2-2 6-1 6 2 2 0 3 2 3 4v4z" fill="#6f9a45"/><path d="M6 14l2 2M12 13l1 3M17 15l1 2" stroke="#3f6a2a" stroke-width="1.4"/>',
+  cancello: '<path d="M2 6h5v15H2zM17 6h5v15h-5z" fill="#cfc4b2"/><path d="M8 11l3 1v8l-3-1zM16 11l-3 1v8l3-1z" fill="#9a6638"/>' };
+function edMuri() { $('ed-cat').innerHTML = Object.entries(TIPI_MURO).map(([k, v]) => `<button type="button" data-muro="${k}" aria-pressed="${k === ED.muro}"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:40px;height:40px">${ICONA_MURO[k]}</svg><span>${v.nome}</span></button>`).join(''); }
 function editor(on) {
   ED.on = on; document.body.classList.toggle('editing', on); $('editbar').hidden = !on; $('ed-btn').setAttribute('aria-pressed', String(on));
   if (on) { edInitMarks(); setSheet(null); edCatalog(); setTool('sel'); toast('Editor: le modifiche si salvano da sole su questo dispositivo', 4); }
   else { ED.sel = null; ED.drag = null; if (MK) { MK.sel.visible = false; MK.hov.visible = false; } clearStrokeMarks(); }
 }
-function esporta() { const b = new Blob([JSON.stringify(mapNow(), null, 1)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'mappa-isola-sire.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
-function importa(file) { const r = new FileReader(); r.onload = () => { try { const m = JSON.parse(r.result); if (m.v !== 1 || !Array.isArray(m.land) || m.land.length < 7 || !m.agenti || !m.spec || !Array.isArray(m.deco)) throw 0; snapshot(); applyMap(m); toast('Mappa importata'); } catch (e) { toast('File non valido: serve una mappa esportata da qui'); } }; r.readAsText(file); }
+function esporta() { const b = new Blob([JSON.stringify(mapNow(), null, 1)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'mappa-isola-sire-quadri.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+function importa(file) { const r = new FileReader(); r.onload = () => { try { const m = JSON.parse(r.result); if (m.v !== 2 || !Array.isArray(m.land) || m.land.length < 7 || !m.agenti || !m.spec || !Array.isArray(m.deco)) throw 0; snapshot(); applyMap(m); toast('Mappa importata'); } catch (e) { toast('File non valido: serve una mappa esportata da qui'); } }; r.readAsText(file); }
 function regnoNome() { const r = REGNI.lista.find(x => x.id === REGNI.attivo); return r ? r.nome : 'Regno'; }
 function apriRegni() {
   setSheet('regni', `<h2>I tuoi regni</h2><p>Ogni regno ha la sua isola. Si salvano su questo dispositivo.</p>
@@ -1374,7 +1447,7 @@ let confirmaOriginale = false;
 $('ed-btn').onclick = () => editor(!ED.on);
 $('ed-fine').onclick = () => editor(false);
 $('ed-tools').addEventListener('click', e => { const b = e.target.closest('button[data-tool]'); if (b) setTool(b.dataset.tool); });
-$('ed-cat').addEventListener('click', e => { const b = e.target.closest('button[data-item]'); if (!b) return; ED.item = b.dataset.item; $('ed-cat').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
+$('ed-cat').addEventListener('click', e => { const m = e.target.closest('button[data-muro]'); if (m) { ED.muro = m.dataset.muro; edMuri(); return; } const b = e.target.closest('button[data-item]'); if (!b) return; ED.item = b.dataset.item; $('ed-cat').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
 $('ed-rot').onclick = ruota; $('ed-del').onclick = elimina; $('ed-undo').onclick = annulla; $('ed-redo').onclick = ripristina;
 $('ed-exp').onclick = esporta; $('ed-imp').onclick = () => $('ed-file').click(); $('ed-file').onchange = e => { if (e.target.files[0]) importa(e.target.files[0]); e.target.value = ''; };
 $('ed-orig').onclick = originale;
@@ -1393,7 +1466,7 @@ Promise.all([fetchText('assets/kit.json').then(t => { progress(.7, 'Dipingo il t
     KIT = kit.scene; progress(1, 'Costruisco l\'isola…');
     GND.rock = roccia; buildSkyClouds(buildUnderside(roccia));
     buildWorld({ tGrass: { value: grass }, tDirt: { value: dirt }, tRoad: { value: roadTexture() }, tSand: { value: sand }, tCoast: { value: coastTexture() }, uHalf: { value: SHORE.half }, uGT0: { value: new THREE.Vector3(...SKIN.t0) }, uGT1: { value: new THREE.Vector3(...SKIN.t1) } });
-    applyQuality(); applyStates(); ticker(false);
+    applyQuality(); applyStates(); buildMuri(); ticker(false);
     $('veil').hidden = true; requestAnimationFrame(loop);
     // abitanti, animali e drago arrivano dopo, senza bloccare l'isola
     const opt = (u) => fetchText(u).then(parse).catch(() => null);
@@ -1401,7 +1474,7 @@ Promise.all([fetchText('assets/kit.json').then(t => { progress(.7, 'Dipingo il t
       .then(([knight, mage, rogue, deer, dragon]) => { Object.assign(CH, { knight, mage, rogue }); addLife({ knight, mage, rogue, deer, dragon }); applyQuality(); });
   })
   .catch(err => { console.error(err); fail('Non riesco a caricare il regno. Ricarica la pagina. (' + (err && err.message ? err.message : err) + ')'); });
-window.__regno = { cam, rotate, goTo, EV, AG, S, PEOPLE, ED, DECO, LAND, ROADT, bloccate, portaDi, messaggero, scr: (q, r) => { const v = W(q, r).project(camera); return [(v.x * .5 + .5) * innerWidth, (-v.y * .5 + .5) * innerHeight]; } };
+window.__regno = { cam, rotate, goTo, EV, AG, S, PEOPLE, ED, DECO, LAND, ROADT, MURI, MURI_OBJ, bloccate, portaDi, messaggero, scr: (q, r) => { const v = W(q, r).project(camera); return [(v.x * .5 + .5) * innerWidth, (-v.y * .5 + .5) * innerHeight]; } };
 })();
 
 /* web app: si installa sulla schermata Home e funziona offline */
