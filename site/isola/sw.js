@@ -1,6 +1,6 @@
 // Isola di Sire: funziona anche offline dopo la prima apertura.
 // Pagina, codice ed elenchi (sprites.json): prima la rete (aggiornamenti subito), poi la copia salvata. Immagini e modelli: prima la copia salvata.
-const C = 'sire-7b1fab8c';
+const C = 'sire-61c1cb59';
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== C).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => {
